@@ -348,6 +348,21 @@ btnPlayProc.addEventListener('click', () => {
   }
 });
 
+function handleAudioMetadata(audioEl, durEl) {
+  if (audioEl.duration && isFinite(audioEl.duration)) {
+    durEl.textContent = formatTime(audioEl.duration);
+    const oscEl = document.getElementById('osc-timecode');
+    if (oscEl && (!activeAudio || activeAudio === audioEl)) {
+      oscEl.textContent = `${audioEl.currentTime.toFixed(2)}s / ${audioEl.duration.toFixed(2)}s`;
+    }
+  }
+}
+
+audioNoisy.addEventListener('loadedmetadata', () => handleAudioMetadata(audioNoisy, timeDurNoisy));
+audioNoisy.addEventListener('durationchange', () => handleAudioMetadata(audioNoisy, timeDurNoisy));
+audioProc.addEventListener('loadedmetadata', () => handleAudioMetadata(audioProc, timeDurProc));
+audioProc.addEventListener('durationchange', () => handleAudioMetadata(audioProc, timeDurProc));
+
 audioNoisy.addEventListener('timeupdate', () => {
   if (audioNoisy.duration) {
     scrubNoisy.value = (audioNoisy.currentTime / audioNoisy.duration) * 100;
@@ -598,6 +613,22 @@ function updateStatusUI(status) {
   if (status.audio_metadata && status.audio_metadata.rms_dbfs !== undefined) {
     const rmsEl = document.getElementById('noisy-rms');
     if (rmsEl) rmsEl.textContent = `${status.audio_metadata.rms_dbfs} dBFS`;
+  }
+  if (status.audio_metadata && status.audio_metadata.duration_seconds !== undefined) {
+    const durSec = Number(status.audio_metadata.duration_seconds);
+    const durFormatted = formatTime(durSec);
+    if (timeDurNoisy) timeDurNoisy.textContent = durFormatted;
+    if (timeDurProc) timeDurProc.textContent = durFormatted;
+    const oscEl = document.getElementById('osc-timecode');
+    if (oscEl) oscEl.textContent = `0.00s / ${durSec.toFixed(2)}s`;
+  }
+  if (status.noisy_audio_data_uri) {
+    const dlNoisy = document.getElementById('btn-download-noisy');
+    if (dlNoisy) dlNoisy.href = status.noisy_audio_data_uri;
+  }
+  if (status.processed_audio_data_uri) {
+    const dlProc = document.getElementById('btn-download-proc');
+    if (dlProc) dlProc.href = status.processed_audio_data_uri;
   }
   if (status.active_sample_id && selectClean && selectClean.value !== status.active_sample_id) {
     selectClean.value = status.active_sample_id;

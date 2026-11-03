@@ -965,7 +965,9 @@ def export_experiment_json():
 
 
 # Mount Frontend Static Directory
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "web")
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "public")
+if not os.path.exists(STATIC_DIR):
+    STATIC_DIR = os.path.join(os.path.dirname(__file__), "web")
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 

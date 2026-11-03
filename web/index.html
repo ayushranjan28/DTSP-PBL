@@ -82,7 +82,7 @@
           <span class="badge" style="padding: 2px 8px; font-size: 0.72rem;" id="active-track-name">Speech + 50Hz Hum (5 dB SNR)</span>
         </div>
         <div style="font-size: 0.78rem; color: var(--text-faint); font-family: var(--font-mono);" id="osc-timecode">
-          0.00s / 3.50s
+          0.00s / 0.00s
         </div>
       </div>
       <canvas id="canvas-oscilloscope" class="oscilloscope-canvas"></canvas>
@@ -106,10 +106,10 @@
             <input type="range" class="scrubber-slider" id="scrub-noisy" min="0" max="100" value="0">
             <div class="timecode">
               <span id="time-curr-noisy">0:00</span>
-              <span id="time-dur-noisy">0:03</span>
+              <span id="time-dur-noisy">0:00</span>
             </div>
           </div>
-          <a href="/api/audio/noisy" download="noisy_input.wav" class="preset-btn" style="padding: 8px 12px;" title="Download Noisy WAV">⬇️</a>
+          <a href="/api/audio/noisy" download="noisy_input.wav" id="btn-download-noisy" class="preset-btn" style="padding: 8px 12px;" title="Download Noisy WAV">⬇️</a>
         </div>
       </div>
 
@@ -128,10 +128,10 @@
             <input type="range" class="scrubber-slider" id="scrub-proc" min="0" max="100" value="0">
             <div class="timecode">
               <span id="time-curr-proc">0:00</span>
-              <span id="time-dur-proc">0:03</span>
+              <span id="time-dur-proc">0:00</span>
             </div>
           </div>
-          <a href="/api/audio/processed" download="denoised_audio.wav" class="preset-btn" style="padding: 8px 12px;" title="Download Clean WAV">⬇️</a>
+          <a href="/api/audio/processed" download="denoised_audio.wav" id="btn-download-proc" class="preset-btn" style="padding: 8px 12px;" title="Download Clean WAV">⬇️</a>
         </div>
       </div>
 
