@@ -541,6 +541,18 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
   });
 });
 
+// Shortcut button to open Noise Simulation Lab tab
+const btnCustomMixModal = document.getElementById('btn-custom-mix-modal');
+if (btnCustomMixModal) {
+  btnCustomMixModal.addEventListener('click', () => {
+    const simTabBtn = document.querySelector('.tab-btn[data-tab="simulation"]');
+    if (simTabBtn) {
+      simTabBtn.click();
+      simTabBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}
+
 function refreshAudioSources() {
   const timestamp = new Date().getTime();
 
