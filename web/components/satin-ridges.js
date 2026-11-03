@@ -20,7 +20,9 @@
     canvas.style.height = '100%';
     canvas.style.pointerEvents = 'none';
     canvas.style.display = 'block';
-    container.style.position = 'relative';
+    if (window.getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
     container.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
@@ -37,6 +39,11 @@
       canvas.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
+
+    const resizeObserver = window.ResizeObserver ? new ResizeObserver(resize) : null;
+    if (resizeObserver) {
+      resizeObserver.observe(container);
+    }
 
     const draw = () => {
       time += speed;
@@ -101,6 +108,7 @@
       destroy: () => {
         if (rafId) cancelAnimationFrame(rafId);
         window.removeEventListener('resize', resize);
+        if (resizeObserver) resizeObserver.disconnect();
         canvas.remove();
       }
     };

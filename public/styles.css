@@ -634,6 +634,8 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow: 0 0 30px rgba(99, 102, 241, 0.15);
+  display: flex;
+  flex-direction: column;
 }
 
 .ml-class-title {
@@ -1156,19 +1158,27 @@ a:focus-visible {
 .ribbons-canvas-backdrop,
 .axial-beam-backdrop,
 .satin-ridges-backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  overflow: hidden;
 }
 
 .ribbons-canvas-backdrop canvas,
 .axial-beam-backdrop canvas,
 .satin-ridges-backdrop canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  pointer-events: none !important;
 }
 
 /* Mobile Quick Playback Bottom Dock (Sticky Bar) */
