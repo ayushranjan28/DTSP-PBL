@@ -389,6 +389,10 @@ def get_status():
         "audio_metadata": aud_meta,
         "has_processed": state.processed_audio is not None,
         "last_method": state.last_method,
+        "noisy_audio_data_uri": audio_to_base64_data_uri(state.current_audio, state.sr),
+        "processed_audio_data_uri": audio_to_base64_data_uri(state.processed_audio, state.sr) if state.processed_audio is not None else "",
+        "noisy_waveform": get_downsampled_waveform(state.current_audio),
+        "processed_waveform": get_downsampled_waveform(state.processed_audio) if state.processed_audio is not None else [],
         "model_ready": model_ready,
         "model_test_accuracy": round(test_acc * 100, 2),
         "supported_classes": CLASSES,
@@ -532,8 +536,37 @@ async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[Upl
         raise HTTPException(status_code=400, detail=str(e))
 
 
+async def update_state_from_files(file: Optional[UploadFile] = None, ref_file: Optional[UploadFile] = None):
+    """Safely ingest audio from request payload into state buffers to ensure stateless serverless compatibility."""
+    if file is not None and getattr(file, "filename", None):
+        try:
+            contents = await file.read()
+            if len(contents) >= 44:
+                aud, sr = load_audio(io.BytesIO(contents), target_sr=16000)
+                state.current_audio = aud
+                state.sr = sr
+                state.audio_source_name = f"Uploaded: {file.filename}"
+                state.is_simulated = False
+        except Exception as e:
+            print(f"Error loading uploaded audio payload: {e}")
+
+    if ref_file is not None and getattr(ref_file, "filename", None):
+        try:
+            ref_contents = await ref_file.read()
+            if len(ref_contents) >= 44:
+                ref_aud, _ = load_audio(io.BytesIO(ref_contents), target_sr=16000)
+                min_l = min(len(state.current_audio), len(ref_aud))
+                state.current_audio = state.current_audio[:min_l]
+                state.clean_reference = ref_aud[:min_l]
+                state.has_clean_ref = True
+        except Exception as e:
+            print(f"Error loading ref audio payload: {e}")
+
+
 @app.post("/api/apply-filter")
-def apply_dsp_filter(
+async def apply_dsp_filter(
+    file: Optional[UploadFile] = File(None),
+    ref_file: Optional[UploadFile] = File(None),
     filter_type: str = Form(...),
     cutoff_hz: float = Form(1000.0),
     cutoff_high_hz: float = Form(3400.0),
@@ -552,6 +585,7 @@ def apply_dsp_filter(
 ):
     """Execute chosen DSP filter on active audio."""
     state.sync_from_disk_if_needed()
+    await update_state_from_files(file, ref_file)
     audio_in = state.current_audio
     sr = state.sr
     t0 = time.perf_counter()
@@ -636,9 +670,13 @@ def apply_dsp_filter(
 
 
 @app.post("/api/adaptive-ml")
-def run_adaptive_ml():
+async def run_adaptive_ml(
+    file: Optional[UploadFile] = File(None),
+    ref_file: Optional[UploadFile] = File(None)
+):
     """Run full ML diagnosis and autonomous filter execution."""
     state.sync_from_disk_if_needed()
+    await update_state_from_files(file, ref_file)
     if not state.classifier.is_trained:
         raise HTTPException(status_code=500, detail="ML Classifier not trained.")
 
@@ -684,9 +722,13 @@ def run_adaptive_ml():
 
 
 @app.post("/api/benchmark")
-def run_benchmark():
+async def run_benchmark(
+    file: Optional[UploadFile] = File(None),
+    ref_file: Optional[UploadFile] = File(None)
+):
     """Execute complete benchmark matrix across all 6 filtering strategies + baseline."""
     state.sync_from_disk_if_needed()
+    await update_state_from_files(file, ref_file)
     audio_in = state.current_audio
     sr = state.sr
 

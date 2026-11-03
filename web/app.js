@@ -16,7 +16,26 @@ let isPlayingNoisy = false;
 let isPlayingProc = false;
 let isPlayingClean = false;
 let activeUploadedBlob = null;
+let activeReferenceBlob = null;
 let benchmarkDataUris = {};
+
+function dataURItoBlob(dataURI) {
+  if (!dataURI) return null;
+  try {
+    const parts = dataURI.split(',');
+    const byteString = atob(parts[1]);
+    const mimeString = parts[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  } catch (e) {
+    console.error('Error converting data URI to blob:', e);
+    return null;
+  }
+}
 
 let audioCtx = null;
 let analyser = null;
@@ -429,11 +448,12 @@ if (selectClean) {
     formData.append('preset', preset);
 
     try {
-      activeUploadedBlob = null;
       const res = await fetch('/api/select-sample', { method: 'POST', body: formData });
       const status = await res.json();
       updateStatusUI(status);
       if (status.noisy_audio_data_uri) {
+        activeUploadedBlob = dataURItoBlob(status.noisy_audio_data_uri);
+        activeReferenceBlob = null;
         audioNoisy.src = status.noisy_audio_data_uri;
         audioNoisy.load();
       }
@@ -490,7 +510,6 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
     document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    activeUploadedBlob = null;
     const preset = btn.getAttribute('data-preset');
     const formData = new FormData();
     formData.append('preset', preset);
@@ -500,6 +519,8 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
       const status = await res.json();
       updateStatusUI(status);
       if (status.noisy_audio_data_uri) {
+        activeUploadedBlob = dataURItoBlob(status.noisy_audio_data_uri);
+        activeReferenceBlob = null;
         audioNoisy.src = status.noisy_audio_data_uri;
         audioNoisy.load();
       }
@@ -630,6 +651,10 @@ function updateStatusUI(status) {
     const dlProc = document.getElementById('btn-download-proc');
     if (dlProc) dlProc.href = status.processed_audio_data_uri;
   }
+  if (status.noisy_audio_data_uri && !activeUploadedBlob) {
+    activeUploadedBlob = dataURItoBlob(status.noisy_audio_data_uri);
+  }
+
   if (status.active_sample_id && selectClean && selectClean.value !== status.active_sample_id) {
     selectClean.value = status.active_sample_id;
   }
@@ -724,6 +749,12 @@ bindSlider('slider-target-snr', 'val-target-snr', ' dB');
 document.getElementById('btn-execute-filter').addEventListener('click', async () => {
   const fType = selFilterType.value;
   const formData = new FormData();
+  if (activeUploadedBlob) {
+    formData.append('file', activeUploadedBlob, 'current_audio.wav');
+  }
+  if (activeReferenceBlob) {
+    formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+  }
   formData.append('filter_type', fType);
 
   if (fType === 'fir') {
@@ -789,8 +820,20 @@ document.getElementById('btn-execute-filter').addEventListener('click', async ()
 // ============================================================================
 
 document.getElementById('btn-run-adaptive-full').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-run-adaptive-full');
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<span>⏳ Diagnosing & Denoising...</span>';
+  btn.disabled = true;
+
   try {
-    const res = await fetch('/api/adaptive-ml', { method: 'POST' });
+    const formData = new FormData();
+    if (activeUploadedBlob) {
+      formData.append('file', activeUploadedBlob, 'current_audio.wav');
+    }
+    if (activeReferenceBlob) {
+      formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+    }
+    const res = await fetch('/api/adaptive-ml', { method: 'POST', body: formData });
     const result = await res.json();
 
     if (result.status === 'success') {
@@ -838,6 +881,10 @@ document.getElementById('btn-run-adaptive-full').addEventListener('click', async
     }
   } catch (e) {
     console.error('Error running adaptive ML:', e);
+    showToast('Failed to run Adaptive ML', 'error');
+  } finally {
+    btn.innerHTML = origHtml;
+    btn.disabled = false;
   }
 });
 
@@ -861,7 +908,14 @@ document.getElementById('btn-run-benchmark-full').addEventListener('click', asyn
   btn.innerHTML = '<span>⏳ Evaluating All Methods...</span>';
 
   try {
-    const res = await fetch('/api/benchmark', { method: 'POST' });
+    const formData = new FormData();
+    if (activeUploadedBlob) {
+      formData.append('file', activeUploadedBlob, 'current_audio.wav');
+    }
+    if (activeReferenceBlob) {
+      formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+    }
+    const res = await fetch('/api/benchmark', { method: 'POST', body: formData });
     const data = await res.json();
 
     if (data.status === 'success') {
@@ -1055,6 +1109,10 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
     }
 
     const result = await res.json();
+
+    // Store active uploaded blobs for subsequent operations
+    activeUploadedBlob = noisyFile;
+    activeReferenceBlob = (refFile && refFile.size > 0) ? refFile : null;
 
     // 1. Instantly bind uploaded noisy audio and denoised audio
     audioNoisy.pause();
