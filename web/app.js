@@ -507,11 +507,67 @@ function refreshAudioSources() {
   audioClean.load();
 }
 
+function showToast(message, type = 'success') {
+  let toast = document.getElementById('studio-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'studio-toast';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '24px';
+    toast.style.right = '24px';
+    toast.style.zIndex = '9999';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.fontSize = '0.90rem';
+    toast.style.fontWeight = '600';
+    toast.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+    toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '8px';
+    toast.style.backdropFilter = 'blur(10px)';
+    document.body.appendChild(toast);
+  }
+
+  if (type === 'error') {
+    toast.style.background = 'rgba(239, 68, 68, 0.95)';
+    toast.style.color = '#ffffff';
+    toast.style.border = '1px solid #f87171';
+  } else if (type === 'info') {
+    toast.style.background = 'rgba(59, 130, 246, 0.95)';
+    toast.style.color = '#ffffff';
+    toast.style.border = '1px solid #60a5fa';
+  } else {
+    toast.style.background = 'rgba(16, 185, 129, 0.95)';
+    toast.style.color = '#ffffff';
+    toast.style.border = '1px solid #34d399';
+  }
+
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateY(0)';
+
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(12px)';
+  }, 4000);
+}
+
 function updateStatusUI(status) {
-  document.getElementById('active-track-name').textContent = status.audio_source_name;
-  document.getElementById('sr-status-text').textContent = `${status.sample_rate.toLocaleString()} Hz`;
-  if (status.audio_metadata) {
-    document.getElementById('noisy-rms').textContent = `${status.audio_metadata.rms_dbfs} dBFS`;
+  if (!status) return;
+
+  if (status.audio_source_name) {
+    const trackEl = document.getElementById('active-track-name');
+    if (trackEl) trackEl.textContent = status.audio_source_name;
+  }
+  if (status.sample_rate) {
+    const srEl = document.getElementById('sr-status-text');
+    if (srEl) srEl.textContent = `${Number(status.sample_rate).toLocaleString()} Hz`;
+  }
+  if (status.audio_metadata && status.audio_metadata.rms_dbfs !== undefined) {
+    const rmsEl = document.getElementById('noisy-rms');
+    if (rmsEl) rmsEl.textContent = `${status.audio_metadata.rms_dbfs} dBFS`;
   }
   if (status.active_sample_id && selectClean && selectClean.value !== status.active_sample_id) {
     selectClean.value = status.active_sample_id;
@@ -820,14 +876,13 @@ if (btnExportAll) {
       const res = await fetch('/api/export-all-unnoised', { method: 'POST' });
       const data = await res.json();
       if (data.status === 'success') {
-        const fileList = data.files.map(f => `  • ${f.filename} (${f.name})`).join('\n');
-        alert(`Exported all unnoised audio files successfully to:\n${data.output_directory}\n\nFiles Generated:\n${fileList}`);
+        showToast(`Exported all 6 unnoised WAVs to outputs/denoised_showcase/!`, 'success');
       } else {
-        alert('Export completed with status: ' + data.status);
+        showToast('Export status: ' + data.status, 'info');
       }
     } catch (err) {
       console.error('Error exporting unnoised audio:', err);
-      alert('Error exporting unnoised audio: ' + err.message);
+      showToast('Error exporting audio: ' + err.message, 'error');
     } finally {
       btnExportAll.innerHTML = originalText;
       btnExportAll.disabled = false;
@@ -853,18 +908,21 @@ document.getElementById('btn-mix-custom').addEventListener('click', async () => 
     const data = await res.json();
     refreshAudioSources();
     renderStaticWaveforms();
-    alert(`Synthesized custom mixture at ${data.measured_snr_db.toFixed(1)} dB SNR!`);
+    showToast(`Synthesized custom mixture at ${data.measured_snr_db.toFixed(1)} dB SNR!`, 'success');
   } catch (e) {
     console.error('Error mixing noise:', e);
+    showToast(`Failed to mix noise: ${e.message}`, 'error');
   }
 });
 
 document.getElementById('btn-upload-files').addEventListener('click', async () => {
-  const noisyFile = document.getElementById('input-file-noisy').files[0];
-  const refFile = document.getElementById('input-file-ref').files[0];
+  const noisyFileInput = document.getElementById('input-file-noisy');
+  const refFileInput = document.getElementById('input-file-ref');
+  const noisyFile = (noisyFileInput && noisyFileInput.files) ? noisyFileInput.files[0] : null;
+  const refFile = (refFileInput && refFileInput.files) ? refFileInput.files[0] : null;
 
   if (!noisyFile) {
-    alert('Please choose a noisy WAV file to upload.');
+    showToast('Please select a noisy WAV file to upload.', 'error');
     return;
   }
 
@@ -875,18 +933,30 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
 
   const formData = new FormData();
   formData.append('file', noisyFile);
-  if (refFile) formData.append('ref_file', refFile);
+  if (refFile && refFile.size > 0) {
+    formData.append('ref_file', refFile);
+  }
 
   try {
     const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (!res.ok) {
+      let errMsg = `Upload failed (HTTP ${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson.detail) errMsg = errJson.detail;
+      } catch (_) {}
+      throw new Error(errMsg);
+    }
+
     const status = await res.json();
     updateStatusUI(status);
     refreshAudioSources();
-    renderStaticWaveforms();
-    alert(`Audio file "${noisyFile.name}" loaded and automatically denoised into Studio!`);
+    await renderStaticWaveforms();
+
+    showToast(`Loaded "${noisyFile.name}" — auto-denoised into Studio!`, 'success');
   } catch (e) {
     console.error('Error uploading file:', e);
-    alert('Error uploading file: ' + e.message);
+    showToast(`Upload failed: ${e.message}`, 'error');
   } finally {
     uploadBtn.innerHTML = originalHtml;
     uploadBtn.disabled = false;

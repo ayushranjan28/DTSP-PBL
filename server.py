@@ -452,13 +452,21 @@ async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[Upl
         state.audio_source_name = f"Uploaded: {file.filename}"
         state.is_simulated = False
 
-        if ref_file is not None:
+        if ref_file is not None and getattr(ref_file, "filename", None):
             ref_contents = await ref_file.read()
-            ref_aud, _ = load_audio(io.BytesIO(ref_contents), target_sr=16000)
-            min_l = min(len(aud), len(ref_aud))
-            state.current_audio = aud[:min_l]
-            state.clean_reference = ref_aud[:min_l]
-            state.has_clean_ref = True
+            if len(ref_contents) >= 44:
+                try:
+                    ref_aud, _ = load_audio(io.BytesIO(ref_contents), target_sr=16000)
+                    min_l = min(len(aud), len(ref_aud))
+                    state.current_audio = aud[:min_l]
+                    state.clean_reference = ref_aud[:min_l]
+                    state.has_clean_ref = True
+                except Exception:
+                    state.clean_reference = None
+                    state.has_clean_ref = False
+            else:
+                state.clean_reference = None
+                state.has_clean_ref = False
         else:
             state.clean_reference = None
             state.has_clean_ref = False
