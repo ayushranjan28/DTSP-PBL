@@ -645,17 +645,17 @@
         <div class="card">
           <div class="card-title">📁 Upload Custom Audio Recording</div>
           <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px;">
-            Upload any WAV recording containing voice and interference. You can optionally upload a paired clean reference speech file to calculate ground-truth SNR.
+            Upload any speech recording (AMR, WAV, MP3, M4A, FLAC, OGG, Opus) containing voice and background interference. You can optionally upload a paired clean reference speech file to calculate ground-truth SNR.
           </p>
 
           <div class="control-group">
-            <label class="control-label">Noisy Audio WAV</label>
-            <input type="file" id="input-file-noisy" accept=".wav,.wave" class="studio-select">
+            <label class="control-label">Noisy Audio Recording (AMR, WAV, MP3, M4A, etc.)</label>
+            <input type="file" id="input-file-noisy" accept=".wav,.wave,.amr,.awb,.mp3,.m4a,.aac,.flac,.ogg,.opus,audio/*" class="studio-select">
           </div>
 
           <div class="control-group">
-            <label class="control-label">Optional Clean Reference WAV</label>
-            <input type="file" id="input-file-ref" accept=".wav,.wave" class="studio-select">
+            <label class="control-label">Optional Clean Reference Speech</label>
+            <input type="file" id="input-file-ref" accept=".wav,.wave,.amr,.awb,.mp3,.m4a,.aac,.flac,.ogg,.opus,audio/*" class="studio-select">
           </div>
 
           <button class="btn-primary" id="btn-upload-files">

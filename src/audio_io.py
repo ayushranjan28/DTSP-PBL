@@ -10,6 +10,48 @@ import soundfile as sf
 import librosa
 
 
+def _read_with_pyav(source: Union[str, io.BytesIO, bytes]) -> Tuple[np.ndarray, int]:
+    """
+    Fallback audio decoder using PyAV (FFmpeg bindings).
+    Supports compressed/forensic speech formats including AMR (.amr, .awb),
+    MP3, AAC, M4A, OGG, Opus, FLAC, and uncompressed WAV.
+    """
+    import av
+
+    if isinstance(source, bytes):
+        source = io.BytesIO(source)
+
+    container = av.open(source)
+    audio_stream = next((s for s in container.streams if s.type == "audio"), None)
+    if audio_stream is None:
+        raise ValueError("No audio stream found in source.")
+
+    frames = []
+    orig_sr = None
+    for frame in container.decode(audio_stream):
+        if orig_sr is None:
+            orig_sr = frame.sample_rate
+        frames.append(frame.to_ndarray())
+
+    if not frames:
+        raise ValueError("Audio source contains no decodable frames.")
+
+    combined = np.concatenate(frames, axis=-1)
+
+    # Normalize integer PCM to float32 [-1.0, 1.0]
+    if np.issubdtype(combined.dtype, np.integer):
+        max_val = float(np.iinfo(combined.dtype).max)
+        audio = (combined.astype(np.float32) / max_val)
+    else:
+        audio = combined.astype(np.float32)
+
+    # PyAV returns shape (channels, samples). Transpose to (samples, channels) like soundfile.
+    if audio.ndim == 2:
+        audio = audio.T
+
+    return audio, int(orig_sr)
+
+
 def load_audio(
     source: Union[str, io.BytesIO, bytes],
     target_sr: int = 16000,
@@ -17,8 +59,9 @@ def load_audio(
     normalize: bool = False
 ) -> Tuple[np.ndarray, int]:
     """
-    Load an audio signal from a filepath, BytesIO buffer, or raw bytes.
+    Load an audio signal from a filepath, BytesIO buffer, or raw audio bytes.
     Safely resamples to target_sr and converts to mono if requested.
+    Supports WAV, AMR (Adaptive Multi-Rate), MP3, M4A, FLAC, OGG, and Opus.
 
     Parameters:
         source: Filepath string, io.BytesIO buffer, or raw audio bytes.
@@ -38,8 +81,14 @@ def load_audio(
 
     try:
         audio, orig_sr = sf.read(source, dtype="float32")
-    except Exception as e:
-        raise ValueError(f"Could not read audio source: {e}")
+    except Exception as sf_err:
+        # Fall back to PyAV for AMR, MP3, AAC, M4A, OGG, etc.
+        try:
+            if hasattr(source, "seek"):
+                source.seek(0)
+            audio, orig_sr = _read_with_pyav(source)
+        except Exception as av_err:
+            raise ValueError(f"Could not read audio source: soundfile error ({sf_err}), av error ({av_err})")
 
     if audio is None or len(audio) == 0:
         raise ValueError("Audio source contains no samples (empty signal).")

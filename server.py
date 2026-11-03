@@ -528,7 +528,7 @@ async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[Upl
 
         if ref_file is not None and getattr(ref_file, "filename", None):
             ref_contents = await ref_file.read()
-            if len(ref_contents) >= 44:
+            if len(ref_contents) >= 8:
                 try:
                     ref_aud, _ = load_audio(io.BytesIO(ref_contents), target_sr=16000)
                     min_l = min(len(aud), len(ref_aud))
@@ -586,7 +586,7 @@ async def update_state_from_files(file: Optional[UploadFile] = None, ref_file: O
     if file is not None and getattr(file, "filename", None):
         try:
             contents = await file.read()
-            if len(contents) >= 44:
+            if len(contents) >= 8:
                 aud, sr = load_audio(io.BytesIO(contents), target_sr=16000)
                 state.current_audio = aud
                 state.sr = sr
@@ -598,7 +598,7 @@ async def update_state_from_files(file: Optional[UploadFile] = None, ref_file: O
     if ref_file is not None and getattr(ref_file, "filename", None):
         try:
             ref_contents = await ref_file.read()
-            if len(ref_contents) >= 44:
+            if len(ref_contents) >= 8:
                 ref_aud, _ = load_audio(io.BytesIO(ref_contents), target_sr=16000)
                 min_l = min(len(state.current_audio), len(ref_aud))
                 state.current_audio = state.current_audio[:min_l]

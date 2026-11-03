@@ -84,6 +84,24 @@ def test_get_audio_metadata():
     assert meta["is_silent"] is False
 
 
+def test_load_amr_audio():
+    amr_path = "data/test_samples/sample.amr"
+    if os.path.exists(amr_path):
+        audio, sr = load_audio(amr_path, target_sr=16000)
+        assert sr == 16000
+        assert isinstance(audio, np.ndarray)
+        assert audio.dtype == np.float32
+        assert len(audio) > 0
+        assert np.all(np.isfinite(audio))
+
+        # Test from BytesIO
+        with open(amr_path, "rb") as f:
+            raw_bytes = f.read()
+        audio_buf, sr_buf = load_audio(io.BytesIO(raw_bytes), target_sr=16000)
+        assert sr_buf == 16000
+        assert len(audio_buf) == len(audio)
+
+
 def test_load_audio_invalid():
     with pytest.raises(ValueError):
         load_audio(io.BytesIO(b"not an audio file"))

@@ -1200,7 +1200,7 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
   const refFile = (refFileInput && refFileInput.files) ? refFileInput.files[0] : null;
 
   if (!noisyFile) {
-    showToast('Please select a noisy WAV file to upload.', 'error');
+    showToast('Please select a noisy audio file to upload.', 'error');
     return;
   }
 
