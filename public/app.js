@@ -900,6 +900,159 @@ function updateProbBar(key, val) {
 
 
 // ============================================================================
+// ON-DEMAND METHOD AUDIO RESOLVER & UNIFIED PLAYBACK CONTROLLER
+// ============================================================================
+
+let currentlyPlayingMethodId = null;
+
+async function getOrComputeMethodAudioUri(mId) {
+  if (benchmarkDataUris[mId]) {
+    return benchmarkDataUris[mId];
+  }
+
+  // 1. Baseline: simply use active noisy audio URI
+  if (mId === 'baseline' || mId === 'input' || mId === 'noisy') {
+    if (audioNoisy.src && audioNoisy.src.startsWith('data:')) {
+      benchmarkDataUris[mId] = audioNoisy.src;
+      return audioNoisy.src;
+    }
+  }
+
+  // 2. Adaptive ML
+  if (mId === 'adaptive') {
+    const formData = new FormData();
+    if (activeUploadedBlob) formData.append('file', activeUploadedBlob, 'current_audio.wav');
+    if (activeReferenceBlob) formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+    const res = await fetch('/api/adaptive-ml', { method: 'POST', body: formData });
+    const result = await res.json();
+    if (result.processed_audio_data_uri) {
+      benchmarkDataUris[mId] = result.processed_audio_data_uri;
+      return result.processed_audio_data_uri;
+    }
+  }
+
+  // 3. Individual DSP Filters executed on active audio payload
+  const formData = new FormData();
+  if (activeUploadedBlob) formData.append('file', activeUploadedBlob, 'current_audio.wav');
+  if (activeReferenceBlob) formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+
+  if (mId === 'fir') {
+    formData.append('filter_type', 'fir');
+    formData.append('btype', 'bandpass');
+    formData.append('cutoff_hz', '300');
+    formData.append('cutoff_high_hz', '3400');
+    formData.append('fir_taps', '101');
+  } else if (mId === 'butterworth') {
+    formData.append('filter_type', 'iir');
+    formData.append('btype', 'highpass');
+    formData.append('cutoff_hz', '150');
+    formData.append('iir_order', '4');
+  } else if (mId === 'notch') {
+    formData.append('filter_type', 'notch');
+    formData.append('notch_freq', '50');
+    formData.append('notch_q', '30');
+    formData.append('notch_harmonics', 'true');
+  } else if (mId === 'spec_gate') {
+    formData.append('filter_type', 'spectral_gating');
+    formData.append('suppression_db', '-18');
+    formData.append('over_subtraction', '1.5');
+  } else if (mId === 'wiener') {
+    formData.append('filter_type', 'wiener');
+    formData.append('wiener_alpha', '0.95');
+    formData.append('wiener_beta', '1.25');
+    formData.append('wiener_floor', '-18');
+  } else {
+    formData.append('filter_type', mId);
+  }
+
+  const res = await fetch('/api/apply-filter', { method: 'POST', body: formData });
+  const result = await res.json();
+  if (result.processed_audio_data_uri) {
+    benchmarkDataUris[mId] = result.processed_audio_data_uri;
+    return result.processed_audio_data_uri;
+  }
+  return null;
+}
+
+async function playMethodAudio(mId, btn, card) {
+  initWebAudio();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+
+  // If this method track is already playing: pause it
+  if (isPlayingProc && currentlyPlayingMethodId === mId) {
+    audioProc.pause();
+    isPlayingProc = false;
+    currentlyPlayingMethodId = null;
+    if (btn) btn.textContent = btn.classList.contains('play-unnoised-btn') ? '▶ Listen Denoised' : '▶';
+    if (card) card.classList.remove('active-playback');
+    btnPlayProc.textContent = '▶';
+    return;
+  }
+
+  // Stop noisy or clean playback
+  if (isPlayingNoisy) { audioNoisy.pause(); isPlayingNoisy = false; btnPlayNoisy.textContent = '▶'; }
+  if (isPlayingClean) { audioClean.pause(); isPlayingClean = false; updateCleanBtnUI(false); }
+
+  // Reset all other button labels
+  document.querySelectorAll('.table-audio-btn').forEach(b => b.textContent = '▶');
+  document.querySelectorAll('.play-unnoised-btn').forEach(b => b.textContent = '▶ Listen Denoised');
+  document.querySelectorAll('.unnoised-card').forEach(c => c.classList.remove('active-playback'));
+
+  // Show loading indicator if generating
+  const isTableBtn = btn && btn.classList.contains('table-audio-btn');
+  const origBtnText = btn ? btn.textContent : '▶';
+  if (btn && !benchmarkDataUris[mId]) {
+    btn.textContent = isTableBtn ? '⏳' : '⏳ Processing...';
+  }
+
+  try {
+    const uri = await getOrComputeMethodAudioUri(mId);
+    if (!uri) throw new Error('Could not produce audio for ' + mId);
+
+    activeAudio = audioProc;
+    audioProc.src = uri;
+    audioProc.load();
+    await audioProc.play();
+
+    isPlayingProc = true;
+    currentlyPlayingMethodId = mId;
+    if (btn) btn.textContent = isTableBtn ? '⏸' : '⏸ Pause';
+    if (card) card.classList.add('active-playback');
+    btnPlayProc.textContent = '⏸';
+    const tag = document.getElementById('proc-tag');
+    if (tag) tag.textContent = `🟢 Denoised: ${mId.toUpperCase()}`;
+
+    // Update download links for this method
+    const dlProc = document.getElementById('btn-download-proc');
+    if (dlProc) dlProc.href = uri;
+
+    const rackLink = document.querySelector(`a[href*="/api/audio/${mId}"]`);
+    if (rackLink) rackLink.href = uri;
+  } catch (err) {
+    console.error('Error playing method audio:', err);
+    if (btn) btn.textContent = origBtnText;
+    showToast('Failed to play ' + mId + ': ' + err.message, 'error');
+  }
+}
+
+// Bind initial static benchmark table play buttons on page load
+document.querySelectorAll('.table-audio-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    const mId = b.getAttribute('data-audio-id');
+    playMethodAudio(mId, b, null);
+  });
+});
+
+// Bind Unnoised Audio Listening Rack buttons
+document.querySelectorAll('.play-unnoised-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mId = btn.getAttribute('data-audio-id');
+    const card = btn.closest('.unnoised-card');
+    playMethodAudio(mId, btn, card);
+  });
+});
+
+// ============================================================================
 // MULTI-METHOD BENCHMARK ACTION
 // ============================================================================
 
@@ -953,76 +1106,25 @@ document.getElementById('btn-run-benchmark-full').addEventListener('click', asyn
       data.results.forEach(r => {
         if (r.audio_data_uri) {
           benchmarkDataUris[r.method_id] = r.audio_data_uri;
+          const rackLink = document.querySelector(`a[href*="/api/audio/${r.method_id}"]`);
+          if (rackLink) rackLink.href = r.audio_data_uri;
         }
       });
 
-      // Bind in-table audio players
+      // Bind dynamically created in-table audio players
       tbody.querySelectorAll('.table-audio-btn').forEach(b => {
         b.addEventListener('click', () => {
           const mId = b.getAttribute('data-audio-id');
-          if (benchmarkDataUris[mId]) {
-            audioProc.src = benchmarkDataUris[mId];
-          } else {
-            audioProc.src = `/api/audio/${mId}?t=${Date.now()}`;
-          }
-          audioProc.play();
-          isPlayingProc = true;
-          btnPlayProc.textContent = '⏸';
-          document.getElementById('proc-tag').textContent = `🟢 Benchmark Track: ${mId}`;
+          playMethodAudio(mId, b, null);
         });
       });
     }
   } catch (e) {
     console.error('Error running benchmark:', e);
+    showToast('Failed to evaluate methods: ' + e.message, 'error');
   } finally {
     btn.innerHTML = '<span>🚀 Run All 6 Methods</span>';
   }
-});
-
-
-// ============================================================================
-// UNNOISED AUDIO LISTENING RACK & BATCH EXPORT
-// ============================================================================
-
-document.querySelectorAll('.play-unnoised-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    initWebAudio();
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-
-    const mId = btn.getAttribute('data-audio-id');
-    const card = btn.closest('.unnoised-card');
-    const isCurrentPlaying = (isPlayingProc && activeAudio === audioProc && (audioProc.src === benchmarkDataUris[mId] || audioProc.src.includes(`/api/audio/${mId}`)));
-
-    if (isCurrentPlaying) {
-      audioProc.pause();
-      isPlayingProc = false;
-      btn.textContent = '▶ Listen Denoised';
-      if (card) card.classList.remove('active-playback');
-      btnPlayProc.textContent = '▶';
-    } else {
-      if (isPlayingNoisy) { audioNoisy.pause(); isPlayingNoisy = false; btnPlayNoisy.textContent = '▶'; }
-      if (isPlayingClean) { audioClean.pause(); isPlayingClean = false; updateCleanBtnUI(false); }
-
-      // Reset other unnoised buttons
-      document.querySelectorAll('.play-unnoised-btn').forEach(b => b.textContent = '▶ Listen Denoised');
-      document.querySelectorAll('.unnoised-card').forEach(c => c.classList.remove('active-playback'));
-
-      if (benchmarkDataUris[mId]) {
-        audioProc.src = benchmarkDataUris[mId];
-      } else {
-        audioProc.src = `/api/audio/${mId}?t=${Date.now()}`;
-      }
-      activeAudio = audioProc;
-      audioProc.play().then(() => {
-        isPlayingProc = true;
-        btn.textContent = '⏸ Pause';
-        if (card) card.classList.add('active-playback');
-        btnPlayProc.textContent = '⏸';
-        const tag = document.getElementById('proc-tag');
-        if (tag) tag.textContent = `🟢 Denoised: ${mId.toUpperCase()}`;
-      }).catch(err => console.error('Audio play error:', err));
-    }
-  });
 });
 
 const btnExportAll = document.getElementById('btn-export-all-wavs');
@@ -1033,7 +1135,11 @@ if (btnExportAll) {
     btnExportAll.disabled = true;
 
     try {
-      const res = await fetch('/api/export-all-unnoised', { method: 'POST' });
+      const formData = new FormData();
+      if (activeUploadedBlob) formData.append('file', activeUploadedBlob, 'current_audio.wav');
+      if (activeReferenceBlob) formData.append('ref_file', activeReferenceBlob, 'clean_ref.wav');
+
+      const res = await fetch('/api/export-all-unnoised', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.status === 'success') {
         showToast(`Exported all 6 unnoised WAVs to outputs/denoised_showcase/!`, 'success');
@@ -1113,6 +1219,14 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
     // Store active uploaded blobs for subsequent operations
     activeUploadedBlob = noisyFile;
     activeReferenceBlob = (refFile && refFile.size > 0) ? refFile : null;
+
+    // Reset benchmark cache and currently playing method
+    benchmarkDataUris = {};
+    if (result.noisy_audio_data_uri) benchmarkDataUris['baseline'] = result.noisy_audio_data_uri;
+    if (result.processed_audio_data_uri) benchmarkDataUris['adaptive'] = result.processed_audio_data_uri;
+    currentlyPlayingMethodId = null;
+    document.querySelectorAll('.table-audio-btn').forEach(b => b.textContent = '▶');
+    document.querySelectorAll('.play-unnoised-btn').forEach(b => b.textContent = '▶ Listen Denoised');
 
     // 1. Instantly bind uploaded noisy audio and denoised audio
     audioNoisy.pause();

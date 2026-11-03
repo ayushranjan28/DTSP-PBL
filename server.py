@@ -783,9 +783,13 @@ async def run_benchmark(
 
 
 @app.post("/api/export-all-unnoised")
-def export_all_unnoised_files():
+async def export_all_unnoised_files(
+    file: Optional[UploadFile] = File(None),
+    ref_file: Optional[UploadFile] = File(None)
+):
     """Execute all filter topologies and export unnoised WAV files to outputs/denoised_showcase/."""
     state.sync_from_disk_if_needed()
+    await update_state_from_files(file, ref_file)
     sr = state.sr
     audio_in = state.current_audio
     output_dir = os.path.join(os.path.dirname(__file__), "outputs", "denoised_showcase")
