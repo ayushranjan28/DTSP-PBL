@@ -9,6 +9,7 @@ import sys
 import time
 import io
 import json
+import tempfile
 from typing import Dict, Any, Optional
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response
@@ -51,6 +52,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+STATE_DIR = tempfile.gettempdir()
+STATE_NPZ = os.path.join(STATE_DIR, "sonicpure_studio_state.npz")
+STATE_JSON = os.path.join(STATE_DIR, "sonicpure_studio_meta.json")
 
 SAMPLE_CATALOG = [
     {
@@ -150,6 +155,7 @@ class StudioState:
         self.sr = 16000
         self.active_sample_id = "clean_female_sentence_01.wav"
         self.active_noise_preset = "hum"
+        self._disk_timestamp = 0.0
 
         # Initialize clean reference from bundled clean sample catalog
         sample_path = os.path.join(os.path.dirname(__file__), "data", "samples", self.active_sample_id)
@@ -164,7 +170,7 @@ class StudioState:
         self.processed_audio = None
         self.last_method = None
         self.last_exec_info = {}
-        self.audio_source_name = "🎙️ Female Sentence 1 + 50 Hz Mains Hum (5 dB SNR)"
+        self.audio_source_name = "🎙️ Female: \"For the twentieth time...\" + 50 Hz Hum (5 dB SNR)"
         self.has_clean_ref = True
         self.is_simulated = True
         self.ml_prediction = None
@@ -176,6 +182,96 @@ class StudioState:
         model_path = os.path.join(os.path.dirname(__file__), "models", "noise_classifier.joblib")
         if os.path.exists(model_path):
             self.classifier.load(model_path)
+            self.auto_denoise_current()
+
+    def auto_denoise_current(self):
+        """Immediately denoise current_audio using best adaptive filter so processed_audio is synchronized."""
+        try:
+            if self.classifier.is_trained:
+                filtered, pred_info, strat_info = self.classifier.apply_adaptive_filter(self.current_audio, sr=self.sr)
+                self.processed_audio = filtered.astype(np.float32)
+                self.last_method = f"Adaptive ML ({pred_info['predicted_class']})"
+                self.ml_prediction = pred_info
+                self.method_audio_cache = {"adaptive": self.processed_audio}
+            else:
+                self.processed_audio = self.current_audio.copy()
+        except Exception as e:
+            self.processed_audio = self.current_audio.copy()
+
+    def save_to_disk(self):
+        """Persist state across serverless instances and worker processes."""
+        try:
+            arrays = {
+                "current_audio": self.current_audio,
+            }
+            if self.clean_reference is not None:
+                arrays["clean_reference"] = self.clean_reference
+            if self.processed_audio is not None:
+                arrays["processed_audio"] = self.processed_audio
+
+            for k, v in self.method_audio_cache.items():
+                if isinstance(v, np.ndarray):
+                    arrays[f"cache_{k}"] = v
+
+            np.savez(STATE_NPZ, **arrays)
+
+            now = time.time()
+            meta = {
+                "sr": self.sr,
+                "active_sample_id": self.active_sample_id,
+                "active_noise_preset": self.active_noise_preset,
+                "audio_source_name": self.audio_source_name,
+                "has_clean_ref": self.has_clean_ref,
+                "is_simulated": self.is_simulated,
+                "last_method": self.last_method,
+                "timestamp": now
+            }
+            with open(STATE_JSON, "w", encoding="utf-8") as f:
+                json.dump(meta, f)
+            self._disk_timestamp = now
+        except Exception:
+            pass
+
+    def sync_from_disk_if_needed(self):
+        """Synchronize active studio audio if updated by another worker."""
+        try:
+            if not os.path.exists(STATE_JSON) or not os.path.exists(STATE_NPZ):
+                return
+            mtime = os.path.getmtime(STATE_JSON)
+            if self._disk_timestamp >= mtime:
+                return
+
+            with open(STATE_JSON, "r", encoding="utf-8") as f:
+                meta = json.load(f)
+
+            npz = np.load(STATE_NPZ)
+            if "current_audio" in npz:
+                self.current_audio = npz["current_audio"]
+            if "clean_reference" in npz:
+                self.clean_reference = npz["clean_reference"]
+            else:
+                self.clean_reference = None
+            if "processed_audio" in npz:
+                self.processed_audio = npz["processed_audio"]
+            else:
+                self.processed_audio = None
+
+            self.method_audio_cache = {}
+            for k in npz.files:
+                if k.startswith("cache_"):
+                    m_id = k[len("cache_"):]
+                    self.method_audio_cache[m_id] = npz[k]
+
+            self.sr = meta.get("sr", 16000)
+            self.active_sample_id = meta.get("active_sample_id", self.active_sample_id)
+            self.active_noise_preset = meta.get("active_noise_preset", self.active_noise_preset)
+            self.audio_source_name = meta.get("audio_source_name", self.audio_source_name)
+            self.has_clean_ref = meta.get("has_clean_ref", self.has_clean_ref)
+            self.is_simulated = meta.get("is_simulated", self.is_simulated)
+            self.last_method = meta.get("last_method", self.last_method)
+            self._disk_timestamp = meta.get("timestamp", mtime)
+        except Exception:
+            pass
 
 
 state = StudioState()
@@ -189,6 +285,7 @@ def get_active_sample_name() -> str:
 
 
 def apply_preset_internal(preset: str):
+    state.sync_from_disk_if_needed()
     sr = state.sr
     if state.clean_reference is None:
         state.clean_reference = generate_clean_speech_synthetic(duration=4.5, sr=sr)
@@ -236,10 +333,9 @@ def apply_preset_internal(preset: str):
         state.has_clean_ref = True
         state.is_simulated = False
 
-    state.processed_audio = None
-    state.last_method = None
-    state.ml_prediction = None
     state.method_audio_cache = {}
+    state.auto_denoise_current()
+    state.save_to_disk()
 
     return get_status()
 
@@ -251,6 +347,7 @@ def apply_preset_internal(preset: str):
 @app.get("/api/status")
 def get_status():
     """Return system readiness, active audio metadata, and model information."""
+    state.sync_from_disk_if_needed()
     aud_meta = get_audio_metadata(state.current_audio, state.sr)
     model_ready = state.classifier.is_trained
     test_acc = state.classifier.metadata.get("test_accuracy", 0.98) if model_ready else 0.0
@@ -346,6 +443,7 @@ def mix_custom_noise(noise_type: str = Form(...), snr_db: float = Form(...)):
 @app.post("/api/upload")
 async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[UploadFile] = File(None)):
     """Upload custom WAV recording with optional clean reference."""
+    state.sync_from_disk_if_needed()
     contents = await file.read()
     try:
         aud, sr = load_audio(io.BytesIO(contents), target_sr=16000)
@@ -365,9 +463,10 @@ async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[Upl
             state.clean_reference = None
             state.has_clean_ref = False
 
-        state.processed_audio = None
-        state.last_method = None
-        state.ml_prediction = None
+        state.benchmark_results = []
+        state.method_audio_cache = {}
+        state.auto_denoise_current()
+        state.save_to_disk()
         return get_status()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -392,6 +491,7 @@ def apply_dsp_filter(
     zero_phase: bool = Form(True)
 ):
     """Execute chosen DSP filter on active audio."""
+    state.sync_from_disk_if_needed()
     audio_in = state.current_audio
     sr = state.sr
     t0 = time.perf_counter()
@@ -441,9 +541,11 @@ def apply_dsp_filter(
 
     t_sec = time.perf_counter() - t0
     state.processed_audio = filtered
+    state.method_audio_cache[filter_type] = filtered
     state.last_method = method_name
     state.last_exec_info = info
     state.last_exec_info["processing_time_sec"] = t_sec
+    state.save_to_disk()
 
     # Compute Metrics
     if state.has_clean_ref and state.clean_reference is not None:
@@ -474,6 +576,7 @@ def apply_dsp_filter(
 @app.post("/api/adaptive-ml")
 def run_adaptive_ml():
     """Run full ML diagnosis and autonomous filter execution."""
+    state.sync_from_disk_if_needed()
     if not state.classifier.is_trained:
         raise HTTPException(status_code=500, detail="ML Classifier not trained.")
 
@@ -485,8 +588,10 @@ def run_adaptive_ml():
     t_sec = time.perf_counter() - t0
 
     state.processed_audio = filtered
+    state.method_audio_cache["adaptive"] = filtered
     state.last_method = f"Adaptive ML ({pred_info['predicted_class']})"
     state.ml_prediction = pred_info
+    state.save_to_disk()
 
     # Metrics
     if state.has_clean_ref and state.clean_reference is not None:
@@ -517,6 +622,7 @@ def run_adaptive_ml():
 @app.post("/api/benchmark")
 def run_benchmark():
     """Execute complete benchmark matrix across all 6 filtering strategies + baseline."""
+    state.sync_from_disk_if_needed()
     audio_in = state.current_audio
     sr = state.sr
 
@@ -565,12 +671,14 @@ def run_benchmark():
         results.append(met)
 
     state.benchmark_results = results
+    state.save_to_disk()
     return {"status": "success", "results": results}
 
 
 @app.post("/api/export-all-unnoised")
 def export_all_unnoised_files():
     """Execute all filter topologies and export unnoised WAV files to outputs/denoised_showcase/."""
+    state.sync_from_disk_if_needed()
     sr = state.sr
     audio_in = state.current_audio
     output_dir = os.path.join(os.path.dirname(__file__), "outputs", "denoised_showcase")
@@ -663,6 +771,7 @@ def export_all_unnoised_files():
         "tag": "ml"
     })
 
+    state.save_to_disk()
     return {
         "status": "success",
         "output_directory": os.path.abspath(output_dir),
@@ -673,27 +782,59 @@ def export_all_unnoised_files():
 
 @app.get("/api/audio/{track_type}")
 def get_audio_stream(track_type: str):
-    """Serve in-memory 16-bit PCM WAV stream for playback."""
+    """Serve in-memory 16-bit PCM WAV stream for playback with on-the-fly execution fallback."""
+    state.sync_from_disk_if_needed()
     sr = state.sr
 
-    if track_type == "noisy" or track_type == "input":
+    if track_type in ("noisy", "input", "baseline"):
         sig = state.current_audio
-    elif track_type == "clean" or track_type == "reference":
+    elif track_type in ("clean", "reference"):
         sig = state.clean_reference if state.clean_reference is not None else state.current_audio
     elif track_type == "processed":
+        if state.processed_audio is None:
+            state.auto_denoise_current()
         sig = state.processed_audio if state.processed_audio is not None else state.current_audio
     elif track_type in state.method_audio_cache:
         sig = state.method_audio_cache[track_type]
+    elif track_type == "fir":
+        sig, _, _ = dsp_filters.apply_fir_filter(state.current_audio, cutoff=(300.0, 3400.0), num_taps=101, btype="bandpass", sr=sr, zero_phase=True)
+        state.method_audio_cache["fir"] = sig
+    elif track_type == "butterworth":
+        sig, _, _ = dsp_filters.apply_butterworth_filter(state.current_audio, cutoff=150.0, order=4, btype="highpass", sr=sr, zero_phase=True)
+        state.method_audio_cache["butterworth"] = sig
+    elif track_type == "notch":
+        sig, _, _ = dsp_filters.apply_notch_filter(state.current_audio, notch_freq=50.0, q=35.0, include_harmonics=True, max_harmonics=4, sr=sr, zero_phase=True)
+        state.method_audio_cache["notch"] = sig
+    elif track_type == "spec_gate":
+        sig, _ = spec_denoising.spectral_gating(state.current_audio, sr=sr, suppression_db=-18.0, over_subtraction=1.5, time_smoothing=2, freq_smoothing=2)
+        state.method_audio_cache["spec_gate"] = sig
+    elif track_type == "wiener":
+        sig, _ = spec_denoising.wiener_filter_audio(state.current_audio, sr=sr, alpha=0.95, overestimation=1.25, gain_floor_db=-18.0)
+        state.method_audio_cache["wiener"] = sig
+    elif track_type == "adaptive":
+        if state.processed_audio is None:
+            state.auto_denoise_current()
+        sig = state.processed_audio
+        state.method_audio_cache["adaptive"] = sig
     else:
         sig = state.current_audio
 
     wav_bytes = audio_to_bytes(sig, sr)
-    return Response(content=wav_bytes, media_type="audio/wav")
+    return Response(
+        content=wav_bytes,
+        media_type="audio/wav",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+    )
 
 
 @app.get("/api/waveform-data")
 def get_waveform_points(track: str = "both", samples: int = 400):
     """Downsample audio signals for high-performance canvas waveform rendering."""
+    state.sync_from_disk_if_needed()
     def downsample(sig):
         step = max(1, len(sig) // samples)
         return [round(float(v), 3) for v in sig[::step][:samples]]

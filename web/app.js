@@ -477,17 +477,34 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
 
 function refreshAudioSources() {
   const timestamp = new Date().getTime();
+
+  // Stop any active playback immediately
+  audioNoisy.pause();
+  audioProc.pause();
+  audioClean.pause();
+  isPlayingNoisy = false;
+  isPlayingProc = false;
+  isPlayingClean = false;
+  if (btnPlayNoisy) btnPlayNoisy.textContent = '▶';
+  if (btnPlayProc) btnPlayProc.textContent = '▶';
+  updateCleanBtnUI(false);
+
+  // Reset scrubber positions
+  if (scrubNoisy) scrubNoisy.value = 0;
+  if (scrubProc) scrubProc.value = 0;
+  if (timeCurrNoisy) timeCurrNoisy.textContent = '0:00';
+  if (timeCurrProc) timeCurrProc.textContent = '0:00';
+
+  // Reset benchmark / unnoised card play buttons
+  document.querySelectorAll('.play-unnoised-btn').forEach(b => b.textContent = '▶ Listen Denoised');
+  document.querySelectorAll('.unnoised-card').forEach(c => c.classList.remove('active-playback'));
+
   audioNoisy.src = `/api/audio/noisy?t=${timestamp}`;
   audioProc.src = `/api/audio/processed?t=${timestamp}`;
   audioClean.src = `/api/audio/clean?t=${timestamp}`;
   audioNoisy.load();
   audioProc.load();
   audioClean.load();
-  if (isPlayingClean) {
-    audioClean.pause();
-    isPlayingClean = false;
-    updateCleanBtnUI(false);
-  }
 }
 
 function updateStatusUI(status) {
@@ -498,6 +515,28 @@ function updateStatusUI(status) {
   }
   if (status.active_sample_id && selectClean && selectClean.value !== status.active_sample_id) {
     selectClean.value = status.active_sample_id;
+  }
+
+  // Handle clean reference availability
+  if (btnPlayClean) {
+    if (status.has_clean_ref) {
+      btnPlayClean.disabled = false;
+      btnPlayClean.style.opacity = '1.0';
+      btnPlayClean.style.cursor = 'pointer';
+      btnPlayClean.title = 'Listen to Active Clean Reference Audio';
+      updateCleanBtnUI(isPlayingClean);
+    } else {
+      btnPlayClean.disabled = true;
+      btnPlayClean.style.opacity = '0.5';
+      btnPlayClean.style.cursor = 'not-allowed';
+      btnPlayClean.title = 'No clean ground-truth reference available for uploaded file';
+      if (cleanPlayText) cleanPlayText.textContent = 'Clean Ref: N/A';
+    }
+  }
+
+  if (status.has_processed && status.last_method) {
+    const procTag = document.getElementById('proc-tag');
+    if (procTag) procTag.textContent = `🟢 Denoised (${status.last_method})`;
   }
 }
 
@@ -829,6 +868,11 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
     return;
   }
 
+  const uploadBtn = document.getElementById('btn-upload-files');
+  const originalHtml = uploadBtn.innerHTML;
+  uploadBtn.innerHTML = '<span>⏳ Processing Audio...</span>';
+  uploadBtn.disabled = true;
+
   const formData = new FormData();
   formData.append('file', noisyFile);
   if (refFile) formData.append('ref_file', refFile);
@@ -839,9 +883,13 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
     updateStatusUI(status);
     refreshAudioSources();
     renderStaticWaveforms();
-    alert('Audio file loaded into Studio!');
+    alert(`Audio file "${noisyFile.name}" loaded and automatically denoised into Studio!`);
   } catch (e) {
     console.error('Error uploading file:', e);
+    alert('Error uploading file: ' + e.message);
+  } finally {
+    uploadBtn.innerHTML = originalHtml;
+    uploadBtn.disabled = false;
   }
 });
 

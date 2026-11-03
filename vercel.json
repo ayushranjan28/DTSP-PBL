@@ -6,8 +6,13 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/",
+      "destination": "/web/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/web/$1"
     }
   ]
 }
+
