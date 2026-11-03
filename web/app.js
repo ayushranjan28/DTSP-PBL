@@ -1194,15 +1194,13 @@ document.getElementById('btn-mix-custom').addEventListener('click', async () => 
 });
 
 document.getElementById('btn-upload-files').addEventListener('click', async () => {
-  const forensicSelect = document.getElementById('sel-forensic-preset');
   const noisyFileInput = document.getElementById('input-file-noisy');
   const refFileInput = document.getElementById('input-file-ref');
-  const selectedForensic = forensicSelect ? forensicSelect.value : '';
   const noisyFile = (noisyFileInput && noisyFileInput.files) ? noisyFileInput.files[0] : null;
   const refFile = (refFileInput && refFileInput.files) ? refFileInput.files[0] : null;
 
-  if (!noisyFile && !selectedForensic) {
-    showToast('Please select a forensic case or upload a WAV file.', 'error');
+  if (!noisyFile) {
+    showToast('Please select a noisy WAV file to upload.', 'error');
     return;
   }
 
@@ -1212,43 +1210,25 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
   uploadBtn.disabled = true;
 
   try {
-    let result = null;
-    let displayName = '';
-
-    if (selectedForensic && !noisyFile) {
-      displayName = forensicSelect.options[forensicSelect.selectedIndex].text;
-      const formData = new FormData();
-      formData.append('sample_id', selectedForensic);
-      const res = await fetch('/api/load-forensic-sample', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error(`Failed to load forensic case (HTTP ${res.status})`);
-      result = await res.json();
-    } else {
-      displayName = noisyFile.name;
-      const formData = new FormData();
-      formData.append('file', noisyFile);
-      if (refFile && refFile.size > 0) {
-        formData.append('ref_file', refFile);
-      }
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      if (!res.ok) {
-        let errMsg = `Upload failed (HTTP ${res.status})`;
-        try {
-          const errJson = await res.json();
-          if (errJson.detail) errMsg = errJson.detail;
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-      result = await res.json();
+    const formData = new FormData();
+    formData.append('file', noisyFile);
+    if (refFile && refFile.size > 0) {
+      formData.append('ref_file', refFile);
     }
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (!res.ok) {
+      let errMsg = `Upload failed (HTTP ${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson.detail) errMsg = errJson.detail;
+      } catch (_) {}
+      throw new Error(errMsg);
+    }
+    const result = await res.json();
 
     // Store active uploaded blobs for subsequent operations
-    if (noisyFile) {
-      activeUploadedBlob = noisyFile;
-      activeReferenceBlob = (refFile && refFile.size > 0) ? refFile : null;
-    } else if (result.noisy_audio_data_uri) {
-      activeUploadedBlob = dataURItoBlob(result.noisy_audio_data_uri);
-      activeReferenceBlob = null;
-    }
+    activeUploadedBlob = noisyFile;
+    activeReferenceBlob = (refFile && refFile.size > 0) ? refFile : null;
 
     // Reset benchmark cache and currently playing method
     benchmarkDataUris = {};
