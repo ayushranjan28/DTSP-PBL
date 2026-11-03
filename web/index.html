@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SonicPure DSP • Adaptive ML Audio Workstation</title>
-  <link rel="stylesheet" href="styles.css?v=2.2">
+  <link rel="stylesheet" href="styles.css?v=2.3">
 </head>
 <body>
 
@@ -51,8 +51,8 @@
         <option value="clean_male_speech_01.wav">🔬 Synthetic Resonator (Glottal Pulse Baseline)</option>
         <option value="clean_sample.wav">📁 Classic Reference Sample</option>
       </select>
-      <button class="preset-btn btn-audition-clean" id="btn-play-clean-ref" title="Listen to Active Clean Reference Audio">
-        <span id="clean-play-icon">🔊</span> <span id="clean-play-text">Audition Clean</span>
+      <button class="preset-btn btn-audition-clean" id="btn-play-clean-ref" title="Listen to Active Clean Reference Audio (Shortcut: 3)" aria-label="Audition Clean Reference Audio">
+        <span id="clean-play-icon">🔊</span> <span id="clean-play-text">Audition Clean</span> <kbd class="hotkey">3</kbd>
       </button>
     </div>
 
@@ -82,8 +82,9 @@
       </div>
     </section>
 
-    <!-- Live Oscilloscope & Audio Energy Strip -->
-    <section class="visualizer-strip">
+    <!-- Live Oscilloscope & Audio Energy Strip (with Interference Ribbons backdrop) -->
+    <section class="visualizer-strip" aria-label="Audio Visualizer">
+      <div id="ribbons-oscilloscope-container" class="ribbons-canvas-backdrop"></div>
       <div class="visualizer-header">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="color: var(--accent-cyan); font-weight: 700; font-size: 0.86rem; text-transform: uppercase;">
@@ -111,15 +112,15 @@
         <canvas id="canvas-noisy-wave" class="waveform-canvas"></canvas>
 
         <div class="deck-controls">
-          <button class="play-btn" id="btn-play-noisy" title="Play Original Audio">▶</button>
+          <button class="play-btn" id="btn-play-noisy" title="Play Original Audio (Shortcut: 1)" aria-label="Play Original Audio">▶</button>
           <div class="scrubber-container">
-            <input type="range" class="scrubber-slider" id="scrub-noisy" min="0" max="100" value="0">
+            <input type="range" class="scrubber-slider" id="scrub-noisy" min="0" max="100" value="0" aria-label="Noisy audio scrubber">
             <div class="timecode">
               <span id="time-curr-noisy">0:00</span>
               <span id="time-dur-noisy">0:00</span>
             </div>
           </div>
-          <a href="/api/audio/noisy" download="noisy_input.wav" id="btn-download-noisy" class="preset-btn" style="padding: 8px 12px;" title="Download Noisy WAV">⬇️</a>
+          <a href="/api/audio/noisy" download="noisy_input.wav" id="btn-download-noisy" class="preset-btn" style="padding: 8px 12px;" title="Download Noisy WAV" aria-label="Download Noisy WAV">⬇️</a>
         </div>
       </div>
 
@@ -133,15 +134,15 @@
         <canvas id="canvas-proc-wave" class="waveform-canvas"></canvas>
 
         <div class="deck-controls">
-          <button class="play-btn play-btn-clean" id="btn-play-proc" title="Play Denoised Audio">▶</button>
+          <button class="play-btn play-btn-clean" id="btn-play-proc" title="Play Denoised Audio (Shortcut: 2)" aria-label="Play Denoised Audio">▶</button>
           <div class="scrubber-container">
-            <input type="range" class="scrubber-slider" id="scrub-proc" min="0" max="100" value="0">
+            <input type="range" class="scrubber-slider" id="scrub-proc" min="0" max="100" value="0" aria-label="Denoised audio scrubber">
             <div class="timecode">
               <span id="time-curr-proc">0:00</span>
               <span id="time-dur-proc">0:00</span>
             </div>
           </div>
-          <a href="/api/audio/processed" download="denoised_audio.wav" id="btn-download-proc" class="preset-btn" style="padding: 8px 12px;" title="Download Clean WAV">⬇️</a>
+          <a href="/api/audio/processed" download="denoised_audio.wav" id="btn-download-proc" class="preset-btn" style="padding: 8px 12px;" title="Download Clean WAV" aria-label="Download Clean WAV">⬇️</a>
         </div>
       </div>
 
@@ -320,27 +321,30 @@
     <div class="panel-content" id="tab-adaptive">
       <div class="workbench-grid">
 
-        <!-- AI Diagnosis Card -->
-        <div class="ml-diagnosis-box">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border-color: rgba(99, 102, 241, 0.4);">
-              🧠 Random Forest Noise Diagnosis
-            </span>
-            <span class="badge" id="ml-confidence-badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">
-              76.2% Confidence
-            </span>
-          </div>
+        <!-- AI Diagnosis Card (with Axial Beam volumetric backdrop) -->
+        <div class="ml-diagnosis-box" style="position: relative; overflow: hidden;">
+          <div id="axial-beam-container" class="axial-beam-backdrop"></div>
+          <div style="position: relative; z-index: 2;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border-color: rgba(99, 102, 241, 0.4);">
+                🧠 Random Forest Noise Diagnosis
+              </span>
+              <span class="badge" id="ml-confidence-badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">
+                76.2% Confidence
+              </span>
+            </div>
 
-          <div class="ml-class-title" id="ml-predicted-label">Electrical Hum (50/60 Hz)</div>
-          <p style="font-size: 0.90rem; color: var(--text-muted); line-height: 1.5;" id="ml-rationale">
-            Strong narrowband energy concentration detected around 50 Hz powerline fundamental. 
-            Selected Harmonic IIR Notch filter with Q=35 to eliminate hum with zero loss to speech formants.
-          </p>
+            <div class="ml-class-title" id="ml-predicted-label">Electrical Hum (50/60 Hz)</div>
+            <p style="font-size: 0.90rem; color: var(--text-muted); line-height: 1.5;" id="ml-rationale">
+              Strong narrowband energy concentration detected around 50 Hz powerline fundamental. 
+              Selected Harmonic IIR Notch filter with Q=35 to eliminate hum with zero loss to speech formants.
+            </p>
 
-          <div style="margin-top: 20px;">
-            <button class="btn-primary btn-emerald" id="btn-run-adaptive-full">
-              <span>⚡ Diagnose Interference & Auto-Clean</span>
-            </button>
+            <div style="margin-top: 20px;">
+              <button class="btn-primary btn-emerald" id="btn-run-adaptive-full">
+                <span>⚡ Diagnose Interference & Auto-Clean</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -407,20 +411,22 @@
 
     <!-- TAB 3: MULTI-FILTER BENCHMARK -->
     <div class="panel-content" id="tab-benchmark">
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <div>
-            <div class="card-title" style="margin-bottom: 2px;">📊 Multi-Filter Comparative Benchmark Matrix</div>
-            <p style="font-size: 0.84rem; color: var(--text-muted);">
-              Process the identical input recording through all 6 filtering strategies side-by-side to compare SNR improvements and execution latencies.
-            </p>
+      <div class="card" style="position: relative; overflow: hidden;">
+        <div id="satin-ridges-container" class="satin-ridges-backdrop"></div>
+        <div style="position: relative; z-index: 2;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div class="card-title" style="margin-bottom: 2px;">📊 Multi-Filter Comparative Benchmark Matrix</div>
+              <p style="font-size: 0.84rem; color: var(--text-muted);">
+                Process the identical input recording through all 6 filtering strategies side-by-side to compare SNR improvements and execution latencies.
+              </p>
+            </div>
+            <button class="btn-primary" id="btn-run-benchmark-full" style="width: auto; padding: 10px 22px;">
+              <span>🚀 Run All 6 Methods</span>
+            </button>
           </div>
-          <button class="btn-primary" id="btn-run-benchmark-full" style="width: auto; padding: 10px 22px;">
-            <span>🚀 Run All 6 Methods</span>
-          </button>
-        </div>
 
-        <div class="benchmark-table-container">
+          <div class="benchmark-table-container">
           <table class="benchmark-table">
             <thead>
               <tr>
@@ -691,9 +697,33 @@
       </div>
     </div>
 
+    <!-- Mobile Bottom Quick-Access Bar (Accessibility & Single-Thumb Control) -->
+    <div class="mobile-bottom-bar" id="mobile-bar" role="toolbar" aria-label="Quick Playback Controls">
+      <button class="mobile-bar-btn" id="mob-btn-noisy" aria-label="Play Noisy Input">
+        <span class="mob-btn-icon">🔴</span>
+        <span class="mob-btn-label">Noisy</span>
+      </button>
+      <button class="mobile-bar-btn" id="mob-btn-proc" aria-label="Play Denoised Output">
+        <span class="mob-btn-icon">🟢</span>
+        <span class="mob-btn-label">Denoised</span>
+      </button>
+      <button class="mobile-bar-btn" id="mob-btn-clean" aria-label="Play Clean Reference">
+        <span class="mob-btn-icon">🎙️</span>
+        <span class="mob-btn-label">Clean</span>
+      </button>
+      <button class="mobile-bar-btn mobile-bar-btn-primary" id="mob-btn-adaptive" aria-label="Run ML Adaptive Clean">
+        <span class="mob-btn-icon">⚡</span>
+        <span class="mob-btn-label">ML Auto</span>
+      </button>
+    </div>
+
   </main>
 
-  <script src="gradient-waves.js?v=2.2"></script>
-  <script src="app.js?v=2.2"></script>
+  <!-- Component Scripts (React Bits & React Bits Pro) -->
+  <script src="gradient-waves.js?v=2.3"></script>
+  <script src="components/interference-ribbons.js?v=2.3"></script>
+  <script src="components/axial-beam.js?v=2.3"></script>
+  <script src="components/satin-ridges.js?v=2.3"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>

@@ -1336,6 +1336,107 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Initialize Interference Ribbons (React Bits Pro Canvas Component)
+  const ribbonsContainer = document.getElementById('ribbons-oscilloscope-container');
+  if (ribbonsContainer && window.initInterferenceRibbons) {
+    try {
+      window.initInterferenceRibbons(ribbonsContainer, {
+        numWires: window.innerWidth < 768 ? 10 : 16,
+        wireColor1: '#06b6d4',
+        wireColor2: '#8b5cf6',
+        wireColor3: '#ec4899',
+        speed: 0.0018,
+        amplitude: 35,
+        tension: 0.003,
+        opacity: 0.55
+      });
+    } catch (err) {
+      console.warn('Interference Ribbons initialization warning:', err);
+    }
+  }
+
+  // Initialize Axial Beam (React Bits Pro Canvas Component)
+  const beamContainer = document.getElementById('axial-beam-container');
+  if (beamContainer && window.initAxialBeam) {
+    try {
+      window.initAxialBeam(beamContainer, {
+        beamCount: window.innerWidth < 768 ? 4 : 7,
+        baseColor: '#4f46e5',
+        accentColor: '#06b6d4',
+        glowIntensity: 0.55,
+        speed: 0.0012
+      });
+    } catch (err) {
+      console.warn('Axial Beam initialization warning:', err);
+    }
+  }
+
+  // Initialize Satin Ridges (React Bits Pro Canvas Component)
+  const ridgesContainer = document.getElementById('satin-ridges-container');
+  if (ridgesContainer && window.initSatinRidges) {
+    try {
+      window.initSatinRidges(ridgesContainer, {
+        ridgeCount: window.innerWidth < 768 ? 3 : 5,
+        speed: 0.0009,
+        opacity: 0.4
+      });
+    } catch (err) {
+      console.warn('Satin Ridges initialization warning:', err);
+    }
+  }
+
+  // Mobile Bottom Bar Quick-Action Listeners
+  const mobNoisy = document.getElementById('mob-btn-noisy');
+  const mobProc = document.getElementById('mob-btn-proc');
+  const mobClean = document.getElementById('mob-btn-clean');
+  const mobAdaptive = document.getElementById('mob-btn-adaptive');
+
+  if (mobNoisy) mobNoisy.addEventListener('click', () => btnPlayNoisy.click());
+  if (mobProc) mobProc.addEventListener('click', () => btnPlayProc.click());
+  if (mobClean) {
+    const btnCleanRef = document.getElementById('btn-play-clean-ref');
+    mobClean.addEventListener('click', () => btnCleanRef && btnCleanRef.click());
+  }
+  if (mobAdaptive) {
+    const btnAdaptive = document.getElementById('btn-run-adaptive-full');
+    mobAdaptive.addEventListener('click', () => btnAdaptive && btnAdaptive.click());
+  }
+
+  // Global Keyboard Shortcuts (WCAG Accessibility)
+  window.addEventListener('keydown', (e) => {
+    if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (isPlayingNoisy) btnPlayNoisy.click();
+      else if (isPlayingProc) btnPlayProc.click();
+      else if (isPlayingClean) {
+        const btnClean = document.getElementById('btn-play-clean-ref');
+        if (btnClean) btnClean.click();
+      } else {
+        btnPlayProc.click();
+      }
+    } else if (e.key === '1') {
+      e.preventDefault();
+      btnPlayNoisy.click();
+    } else if (e.key === '2') {
+      e.preventDefault();
+      btnPlayProc.click();
+    } else if (e.key === '3') {
+      e.preventDefault();
+      const btnClean = document.getElementById('btn-play-clean-ref');
+      if (btnClean) btnClean.click();
+    } else if (e.key.toLowerCase() === 'm') {
+      e.preventDefault();
+      const btnAdaptive = document.getElementById('btn-run-adaptive-full');
+      if (btnAdaptive) btnAdaptive.click();
+    } else if (e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      const btnBench = document.getElementById('btn-run-benchmark-full');
+      if (btnBench) btnBench.click();
+    }
+  });
+
   try {
     const res = await fetch('/api/status');
     const status = await res.json();
