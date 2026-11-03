@@ -15,6 +15,8 @@ let activeAudio = audioNoisy;
 let isPlayingNoisy = false;
 let isPlayingProc = false;
 let isPlayingClean = false;
+let activeUploadedBlob = null;
+let benchmarkDataUris = {};
 
 let audioCtx = null;
 let analyser = null;
@@ -412,11 +414,25 @@ if (selectClean) {
     formData.append('preset', preset);
 
     try {
+      activeUploadedBlob = null;
       const res = await fetch('/api/select-sample', { method: 'POST', body: formData });
       const status = await res.json();
       updateStatusUI(status);
+      if (status.noisy_audio_data_uri) {
+        audioNoisy.src = status.noisy_audio_data_uri;
+        audioNoisy.load();
+      }
+      if (status.processed_audio_data_uri) {
+        audioProc.src = status.processed_audio_data_uri;
+        audioProc.load();
+      }
+      if (status.noisy_waveform && status.noisy_waveform.length) {
+        drawSingleWaveform(ctxNoisy, canvasNoisy, status.noisy_waveform, '#f43f5e', 'rgba(244, 63, 94, 0.08)');
+      }
+      if (status.processed_waveform && status.processed_waveform.length) {
+        drawSingleWaveform(ctxProc, canvasProc, status.processed_waveform, '#10b981', 'rgba(16, 185, 129, 0.08)');
+      }
       refreshAudioSources();
-      renderStaticWaveforms();
     } catch (e) {
       console.error('Error selecting clean sample:', e);
     }
@@ -459,6 +475,7 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
     document.querySelectorAll('.preset-btn[data-preset]').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
+    activeUploadedBlob = null;
     const preset = btn.getAttribute('data-preset');
     const formData = new FormData();
     formData.append('preset', preset);
@@ -467,8 +484,21 @@ document.querySelectorAll('.preset-btn[data-preset]').forEach(btn => {
       const res = await fetch('/api/quick-preset', { method: 'POST', body: formData });
       const status = await res.json();
       updateStatusUI(status);
+      if (status.noisy_audio_data_uri) {
+        audioNoisy.src = status.noisy_audio_data_uri;
+        audioNoisy.load();
+      }
+      if (status.processed_audio_data_uri) {
+        audioProc.src = status.processed_audio_data_uri;
+        audioProc.load();
+      }
+      if (status.noisy_waveform && status.noisy_waveform.length) {
+        drawSingleWaveform(ctxNoisy, canvasNoisy, status.noisy_waveform, '#f43f5e', 'rgba(244, 63, 94, 0.08)');
+      }
+      if (status.processed_waveform && status.processed_waveform.length) {
+        drawSingleWaveform(ctxProc, canvasProc, status.processed_waveform, '#10b981', 'rgba(16, 185, 129, 0.08)');
+      }
       refreshAudioSources();
-      renderStaticWaveforms();
     } catch (e) {
       console.error('Error applying preset:', e);
     }
@@ -689,6 +719,22 @@ document.getElementById('btn-execute-filter').addEventListener('click', async ()
     const res = await fetch('/api/apply-filter', { method: 'POST', body: formData });
     const result = await res.json();
 
+    if (result.processed_audio_data_uri) {
+      audioProc.pause();
+      isPlayingProc = false;
+      btnPlayProc.textContent = '▶';
+      audioProc.src = result.processed_audio_data_uri;
+      audioProc.load();
+    } else {
+      refreshAudioSources();
+    }
+
+    if (result.processed_waveform && result.processed_waveform.length) {
+      drawSingleWaveform(ctxProc, canvasProc, result.processed_waveform, '#10b981', 'rgba(16, 185, 129, 0.08)');
+    } else {
+      renderStaticWaveforms();
+    }
+
     // Update UI Metrics
     if (result.metrics) {
       const m = result.metrics;
@@ -700,8 +746,7 @@ document.getElementById('btn-execute-filter').addEventListener('click', async ()
     }
 
     document.getElementById('proc-tag').textContent = `🟢 Denoised (${result.method})`;
-    refreshAudioSources();
-    renderStaticWaveforms();
+    showToast(`Applied ${result.method}!`, 'success');
   } catch (e) {
     console.error('Error applying filter:', e);
   }
@@ -720,6 +765,22 @@ document.getElementById('btn-run-adaptive-full').addEventListener('click', async
     if (result.status === 'success') {
       const pred = result.prediction;
       const strat = result.strategy;
+
+      if (result.processed_audio_data_uri) {
+        audioProc.pause();
+        isPlayingProc = false;
+        btnPlayProc.textContent = '▶';
+        audioProc.src = result.processed_audio_data_uri;
+        audioProc.load();
+      } else {
+        refreshAudioSources();
+      }
+
+      if (result.processed_waveform && result.processed_waveform.length) {
+        drawSingleWaveform(ctxProc, canvasProc, result.processed_waveform, '#10b981', 'rgba(16, 185, 129, 0.08)');
+      } else {
+        renderStaticWaveforms();
+      }
 
       document.getElementById('ml-predicted-label').textContent = pred.class_label;
       document.getElementById('ml-confidence-badge').textContent = `${(pred.confidence * 100).toFixed(1)}% Confidence`;
@@ -742,8 +803,7 @@ document.getElementById('btn-run-adaptive-full').addEventListener('click', async
       else if (pred.predicted_class === 'clean_speech') document.getElementById('bar-clean').classList.add('winner');
 
       document.getElementById('proc-tag').textContent = `🟢 Denoised (${strat.strategy})`;
-      refreshAudioSources();
-      renderStaticWaveforms();
+      showToast(`Cleaned with ${strat.strategy}!`, 'success');
     }
   } catch (e) {
     console.error('Error running adaptive ML:', e);
@@ -804,11 +864,22 @@ document.getElementById('btn-run-benchmark-full').addEventListener('click', asyn
         tbody.appendChild(tr);
       });
 
+      // Cache data URIs for all methods
+      data.results.forEach(r => {
+        if (r.audio_data_uri) {
+          benchmarkDataUris[r.method_id] = r.audio_data_uri;
+        }
+      });
+
       // Bind in-table audio players
       tbody.querySelectorAll('.table-audio-btn').forEach(b => {
         b.addEventListener('click', () => {
           const mId = b.getAttribute('data-audio-id');
-          audioProc.src = `/api/audio/${mId}`;
+          if (benchmarkDataUris[mId]) {
+            audioProc.src = benchmarkDataUris[mId];
+          } else {
+            audioProc.src = `/api/audio/${mId}?t=${Date.now()}`;
+          }
           audioProc.play();
           isPlayingProc = true;
           btnPlayProc.textContent = '⏸';
@@ -835,7 +906,7 @@ document.querySelectorAll('.play-unnoised-btn').forEach(btn => {
 
     const mId = btn.getAttribute('data-audio-id');
     const card = btn.closest('.unnoised-card');
-    const isCurrentPlaying = (isPlayingProc && activeAudio === audioProc && audioProc.src.endsWith(`/api/audio/${mId}`));
+    const isCurrentPlaying = (isPlayingProc && activeAudio === audioProc && (audioProc.src === benchmarkDataUris[mId] || audioProc.src.includes(`/api/audio/${mId}`)));
 
     if (isCurrentPlaying) {
       audioProc.pause();
@@ -851,7 +922,11 @@ document.querySelectorAll('.play-unnoised-btn').forEach(btn => {
       document.querySelectorAll('.play-unnoised-btn').forEach(b => b.textContent = '▶ Listen Denoised');
       document.querySelectorAll('.unnoised-card').forEach(c => c.classList.remove('active-playback'));
 
-      audioProc.src = `/api/audio/${mId}`;
+      if (benchmarkDataUris[mId]) {
+        audioProc.src = benchmarkDataUris[mId];
+      } else {
+        audioProc.src = `/api/audio/${mId}?t=${Date.now()}`;
+      }
       activeAudio = audioProc;
       audioProc.play().then(() => {
         isPlayingProc = true;
@@ -948,12 +1023,77 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
       throw new Error(errMsg);
     }
 
-    const status = await res.json();
-    updateStatusUI(status);
-    refreshAudioSources();
-    await renderStaticWaveforms();
+    const result = await res.json();
 
-    showToast(`Loaded "${noisyFile.name}" — auto-denoised into Studio!`, 'success');
+    // 1. Instantly bind uploaded noisy audio and denoised audio
+    audioNoisy.pause();
+    audioProc.pause();
+    audioClean.pause();
+    isPlayingNoisy = false;
+    isPlayingProc = false;
+    isPlayingClean = false;
+    btnPlayNoisy.textContent = '▶';
+    btnPlayProc.textContent = '▶';
+
+    if (result.noisy_audio_data_uri) {
+      audioNoisy.src = result.noisy_audio_data_uri;
+    } else {
+      audioNoisy.src = URL.createObjectURL(noisyFile);
+    }
+    if (result.processed_audio_data_uri) {
+      audioProc.src = result.processed_audio_data_uri;
+    }
+    audioNoisy.load();
+    audioProc.load();
+
+    // 2. Instantly draw waveforms
+    if (result.noisy_waveform && result.noisy_waveform.length) {
+      drawSingleWaveform(ctxNoisy, canvasNoisy, result.noisy_waveform, '#f43f5e', 'rgba(244, 63, 94, 0.08)');
+    }
+    if (result.processed_waveform && result.processed_waveform.length) {
+      drawSingleWaveform(ctxProc, canvasProc, result.processed_waveform, '#10b981', 'rgba(16, 185, 129, 0.08)');
+    }
+
+    // 3. Update status UI
+    updateStatusUI(result);
+
+    // 4. Update ML Diagnosis card
+    if (result.prediction) {
+      const pred = result.prediction;
+      document.getElementById('ml-predicted-label').textContent = pred.class_label;
+      document.getElementById('ml-confidence-badge').textContent = `${(pred.confidence * 100).toFixed(1)}% Confidence`;
+      if (result.strategy && result.strategy.reason) {
+        document.getElementById('ml-rationale').textContent = result.strategy.reason;
+      }
+      const probs = pred.class_probabilities;
+      if (probs) {
+        updateProbBar('hum', probs.electrical_hum || 0);
+        updateProbBar('rumble', probs.low_frequency_rumble || 0);
+        updateProbBar('hiss', probs.high_frequency_hiss || 0);
+        updateProbBar('broadband', probs.broadband_noise || 0);
+        updateProbBar('clean', probs.clean_speech || 0);
+      }
+      document.querySelectorAll('.prob-bar').forEach(b => b.classList.remove('winner'));
+      if (pred.predicted_class === 'electrical_hum') document.getElementById('bar-hum').classList.add('winner');
+      else if (pred.predicted_class === 'low_frequency_rumble') document.getElementById('bar-rumble').classList.add('winner');
+      else if (pred.predicted_class === 'high_frequency_hiss') document.getElementById('bar-hiss').classList.add('winner');
+      else if (pred.predicted_class === 'broadband_noise') document.getElementById('bar-broadband').classList.add('winner');
+      else if (pred.predicted_class === 'clean_speech') document.getElementById('bar-clean').classList.add('winner');
+    }
+
+    // 5. Update processed deck badge & tag
+    if (result.metrics) {
+      const m = result.metrics;
+      document.getElementById('metric-snr-imp').textContent = m.snr_improvement_db !== undefined ? `+${m.snr_improvement_db} dB` : `${m.total_attenuation_db} dB`;
+      document.getElementById('metric-snr-out').textContent = m.output_snr_db !== undefined ? `${m.output_snr_db} dB` : `${m.output_rms_dbfs} dBFS`;
+      document.getElementById('metric-rmse').textContent = m.rmse !== undefined ? m.rmse.toFixed(4) : '-';
+      document.getElementById('proc-snr-badge').textContent = m.snr_improvement_db !== undefined ? `+${m.snr_improvement_db} dB SNR Imp.` : 'Denoised';
+    }
+    const tag = result.last_method || (result.strategy && result.strategy.strategy) || 'Adaptive ML';
+    document.getElementById('proc-tag').textContent = `🟢 Denoised (${tag})`;
+
+    showToast(`Loaded "${noisyFile.name}" — auto-denoised! Click Play above.`, 'success');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Error uploading file:', e);
     showToast(`Upload failed: ${e.message}`, 'error');

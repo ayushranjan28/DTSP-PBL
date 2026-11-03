@@ -9,6 +9,7 @@ import sys
 import time
 import io
 import json
+import base64
 import tempfile
 from typing import Dict, Any, Optional
 import numpy as np
@@ -56,6 +57,23 @@ app.add_middleware(
 STATE_DIR = tempfile.gettempdir()
 STATE_NPZ = os.path.join(STATE_DIR, "sonicpure_studio_state.npz")
 STATE_JSON = os.path.join(STATE_DIR, "sonicpure_studio_meta.json")
+
+
+def audio_to_base64_data_uri(sig: np.ndarray, sr: int = 16000) -> str:
+    """Encode audio array to standard base64 data URI for instant client playback."""
+    if sig is None or len(sig) == 0:
+        return ""
+    b = audio_to_bytes(sig, sr)
+    b64 = base64.b64encode(b).decode("ascii")
+    return f"data:audio/wav;base64,{b64}"
+
+
+def get_downsampled_waveform(sig: np.ndarray, num_points: int = 400) -> list:
+    """Downsample signal for real-time canvas rendering."""
+    if sig is None or len(sig) == 0:
+        return []
+    step = max(1, len(sig) // num_points)
+    return [round(float(v), 3) for v in sig[::step][:num_points]]
 
 SAMPLE_CATALOG = [
     {
@@ -337,7 +355,14 @@ def apply_preset_internal(preset: str):
     state.auto_denoise_current()
     state.save_to_disk()
 
-    return get_status()
+    status = get_status()
+    return {
+        **status,
+        "noisy_audio_data_uri": audio_to_base64_data_uri(state.current_audio, sr),
+        "processed_audio_data_uri": audio_to_base64_data_uri(state.processed_audio, sr),
+        "noisy_waveform": get_downsampled_waveform(state.current_audio),
+        "processed_waveform": get_downsampled_waveform(state.processed_audio)
+    }
 
 
 # ============================================================================
@@ -475,7 +500,34 @@ async def upload_audio_file(file: UploadFile = File(...), ref_file: Optional[Upl
         state.method_audio_cache = {}
         state.auto_denoise_current()
         state.save_to_disk()
-        return get_status()
+
+        t_sec = 0.05
+        if state.has_clean_ref and state.clean_reference is not None:
+            metrics = compute_reference_based_metrics(
+                clean_ref=state.clean_reference,
+                noisy_input=state.current_audio,
+                processed=state.processed_audio,
+                sr=state.sr,
+                processing_time_sec=t_sec
+            )
+        else:
+            metrics = compute_unpaired_metrics(
+                noisy_input=state.current_audio,
+                processed=state.processed_audio,
+                sr=state.sr,
+                processing_time_sec=t_sec
+            )
+
+        status = get_status()
+        return {
+            **status,
+            "noisy_audio_data_uri": audio_to_base64_data_uri(state.current_audio, state.sr),
+            "processed_audio_data_uri": audio_to_base64_data_uri(state.processed_audio, state.sr),
+            "noisy_waveform": get_downsampled_waveform(state.current_audio),
+            "processed_waveform": get_downsampled_waveform(state.processed_audio),
+            "prediction": state.ml_prediction,
+            "metrics": metrics
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -577,7 +629,9 @@ def apply_dsp_filter(
         "method": method_name,
         "processing_time_ms": round(t_sec * 1000, 1),
         "metrics": metrics,
-        "info": info
+        "info": info,
+        "processed_audio_data_uri": audio_to_base64_data_uri(filtered, sr),
+        "processed_waveform": get_downsampled_waveform(filtered)
     }
 
 
@@ -623,7 +677,9 @@ def run_adaptive_ml():
         "prediction": pred_info,
         "strategy": strat_info,
         "processing_time_ms": round(t_sec * 1000, 1),
-        "metrics": metrics
+        "metrics": metrics,
+        "processed_audio_data_uri": audio_to_base64_data_uri(filtered, sr),
+        "processed_waveform": get_downsampled_waveform(filtered)
     }
 
 
@@ -676,6 +732,7 @@ def run_benchmark():
 
         met["method_id"] = m_id
         met["method_name"] = m["name"]
+        met["audio_data_uri"] = audio_to_base64_data_uri(out_sig, sr)
         results.append(met)
 
     state.benchmark_results = results
