@@ -1313,6 +1313,29 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
 
 window.addEventListener('DOMContentLoaded', async () => {
   resizeCanvases();
+
+  // Initialize GradientWaves (React Bits WebGL2 Component)
+  const wavesContainer = document.getElementById('gradient-waves-container');
+  if (wavesContainer && window.initGradientWaves) {
+    try {
+      window.initGradientWaves(wavesContainer, {
+        horizonColor: '#5227FF',
+        waveColor: '#FF9FFC',
+        crestColor: '#FFFFFF',
+        speed: 0.4,
+        amplitude: 2.5,
+        relief: 1,
+        lightAngle: 120,
+        mouseInteraction: true,
+        swellOnClick: true,
+        quality: window.innerWidth < 768 ? 'low' : 'medium',
+        dpr: Math.min(window.devicePixelRatio || 1, 1.5)
+      });
+    } catch (err) {
+      console.warn('GradientWaves initialization warning:', err);
+    }
+  }
+
   try {
     const res = await fetch('/api/status');
     const status = await res.json();
