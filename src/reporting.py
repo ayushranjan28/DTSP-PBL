@@ -5,7 +5,8 @@ Generates structured JSON experiment summaries, CSV comparison logs, and formatt
 
 from typing import Dict, Any, List
 import json
-import pandas as pd
+import csv
+import io
 from datetime import datetime
 
 
@@ -32,10 +33,37 @@ def create_experiment_summary(
     }
 
 
-def results_to_dataframe(method_results: List[Dict[str, Any]]) -> pd.DataFrame:
+def results_to_dataframe(method_results: List[Dict[str, Any]]):
     """
-    Convert list of method benchmark dictionaries into a clean Pandas DataFrame.
+    Convert list of method benchmark dictionaries into a clean tabular structure with to_csv() export.
+    Uses standard library csv to avoid heavy pandas dependency on serverless runtimes.
     """
+    class SimpleResultsTable:
+        def __init__(self, records: List[Dict[str, Any]]):
+            self.records = records
+
+        def to_csv(self, index: bool = False) -> str:
+            if not self.records:
+                return ""
+            # Collect all field names in order
+            fieldnames = [
+                "Method", "Runtime (ms)", "RTF",
+                "Input SNR (dB)", "Output SNR (dB)", "SNR Imp. (dB)", "RMSE", "Pearson r",
+                "Output RMS (dBFS)", "Rumble Atten. (dB)", "50Hz Atten. (dB)", "Hiss Atten. (dB)"
+            ]
+            # Keep only present fieldnames
+            present_keys = []
+            for k in fieldnames:
+                if any(k in r for r in self.records):
+                    present_keys.append(k)
+
+            out = io.StringIO()
+            writer = csv.DictWriter(out, fieldnames=present_keys, extrasaction="ignore")
+            writer.writeheader()
+            for r in self.records:
+                writer.writerow(r)
+            return out.getvalue()
+
     records = []
     for r in method_results:
         rec = {
@@ -57,7 +85,7 @@ def results_to_dataframe(method_results: List[Dict[str, Any]]) -> pd.DataFrame:
 
         records.append(rec)
 
-    return pd.DataFrame(records)
+    return SimpleResultsTable(records)
 
 
 def export_markdown_report(summary: Dict[str, Any]) -> str:

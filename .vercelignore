@@ -1,0 +1,15 @@
+# Vercel Ignore file - do not bundle heavy training datasets, benchmark corpuses, or test audio
+data/cmu_train/
+data/external_benchmarks/
+data/train_corpus/
+data/train_real_noise/
+data/unseen_speakers_test/
+unseen_test_uploads/
+outputs/
+matlab/
+tests/
+scripts/
+.pytest_cache/
+__pycache__/
+.git
+.github
