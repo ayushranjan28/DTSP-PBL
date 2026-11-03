@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SonicPure DSP • Adaptive ML Audio Workstation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top App Navigation Bar -->
+  <header class="app-header">
+    <div class="brand-container">
+      <div class="brand-icon">🎧</div>
+      <div>
+        <div class="brand-title">SonicPure DSP <span>Adaptive AI</span></div>
+        <div class="brand-subtitle">Classical Filter Synthesis &bull; STFT Restoration &bull; Random Forest AI</div>
+      </div>
+    </div>
+
+    <div class="header-meta">
+      <div class="badge" id="badge-model">
+        <div class="badge-pulse"></div>
+        <span id="model-status-text">ML Model Ready (98.1%)</span>
+      </div>
+      <div class="badge">
+        <span style="color: var(--accent-cyan);">⚡</span>
+        <span id="sr-status-text">16,000 Hz</span>
+      </div>
+      <div class="badge" id="badge-ref">
+        <span style="color: var(--accent-emerald);">●</span>
+        <span>Clean Reference Active</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1-Click Quick Preset Scenarios & Sample Picker Toolbar -->
+  <nav class="presets-bar">
+    <div class="sample-picker-wrap">
+      <span class="presets-label">🎙️ Clean Reference Audio:</span>
+      <select id="select-clean-sample" class="studio-sample-select" aria-label="Select Clean Sample Audio">
+        <option value="clean_male_speech_01.wav" selected>🎙️ Male Voice 1 (Studio Harvard Sentence, 110 Hz)</option>
+        <option value="clean_female_speech_01.wav">🎙️ Female Voice 1 (Crisp Studio Speech, 211 Hz)</option>
+        <option value="clean_female_speech_02.wav">🎙️ Female Voice 2 (Expressive Dynamic Pitch, 229 Hz)</option>
+        <option value="clean_male_speech_02.wav">🎙️ Male Voice 2 (Baritone Narrative, 117 Hz)</option>
+        <option value="clean_female_speech_03.wav">🎙️ Female Voice 3 (Conversational Cadence, 199 Hz)</option>
+        <option value="clean_male_speech_03.wav">🎙️ Male Voice 3 (Deep Resonant Chest Voice, 112 Hz)</option>
+        <option value="clean_acoustic_instrument.wav">🎸 Acoustic Guitar (Plucked Chord Arpeggio)</option>
+        <option value="clean_synthetic_speech.wav">🔬 Synthetic Formants (Academic Speech Model)</option>
+        <option value="clean_sample.wav">📁 Classic Reference Sample</option>
+      </select>
+      <button class="preset-btn btn-audition-clean" id="btn-play-clean-ref" title="Listen to Active Clean Reference Audio">
+        <span id="clean-play-icon">🔊</span> <span id="clean-play-text">Audition Clean</span>
+      </button>
+    </div>
+
+    <div class="presets-divider"></div>
+
+    <div class="presets-label">⚡ Noise Profile:</div>
+    <button class="preset-btn active" data-preset="hum">⚡ 50 Hz Mains Hum</button>
+    <button class="preset-btn" data-preset="rumble">⚡ HVAC Rumble</button>
+    <button class="preset-btn" data-preset="hiss">⚡ Tape Hiss</button>
+    <button class="preset-btn" data-preset="broadband">⚡ Pink Noise</button>
+    <button class="preset-btn" data-preset="clean">⚡ Clean Passthrough</button>
+    <button class="preset-btn" id="btn-custom-mix-modal" style="margin-left: auto; background: rgba(99, 102, 241, 0.15); border-color: var(--accent-primary);">
+      🧪 Custom Noise Lab
+    </button>
+  </nav>
+
+  <!-- Main Workstation Layout -->
+  <main class="main-container">
+
+    <!-- Live Oscilloscope & Audio Energy Strip -->
+    <section class="visualizer-strip">
+      <div class="visualizer-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--accent-cyan); font-weight: 700; font-size: 0.86rem; text-transform: uppercase;">
+            📊 Real-Time Web Audio Oscilloscope
+          </span>
+          <span class="badge" style="padding: 2px 8px; font-size: 0.72rem;" id="active-track-name">Speech + 50Hz Hum (5 dB SNR)</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-faint); font-family: var(--font-mono);" id="osc-timecode">
+          0.00s / 3.50s
+        </div>
+      </div>
+      <canvas id="canvas-oscilloscope" class="oscilloscope-canvas"></canvas>
+    </section>
+
+    <!-- Side-by-Side Audio Deck (Noisy Input vs Denoised Output) -->
+    <section class="audio-deck-grid">
+
+      <!-- Left Deck: Noisy Input -->
+      <div class="deck-card deck-card-noisy">
+        <div class="deck-header">
+          <span class="deck-tag tag-noisy">🔴 Noisy Input Signal</span>
+          <span style="font-size: 0.80rem; color: var(--text-faint); font-family: var(--font-mono);" id="noisy-rms">-19.2 dBFS</span>
+        </div>
+
+        <canvas id="canvas-noisy-wave" class="waveform-canvas"></canvas>
+
+        <div class="deck-controls">
+          <button class="play-btn" id="btn-play-noisy" title="Play Original Audio">▶</button>
+          <div class="scrubber-container">
+            <input type="range" class="scrubber-slider" id="scrub-noisy" min="0" max="100" value="0">
+            <div class="timecode">
+              <span id="time-curr-noisy">0:00</span>
+              <span id="time-dur-noisy">0:03</span>
+            </div>
+          </div>
+          <a href="/api/audio/noisy" download="noisy_input.wav" class="preset-btn" style="padding: 8px 12px;" title="Download Noisy WAV">⬇️</a>
+        </div>
+      </div>
+
+      <!-- Right Deck: Denoised Output -->
+      <div class="deck-card deck-card-clean">
+        <div class="deck-header">
+          <span class="deck-tag tag-clean" id="proc-tag">🟢 Denoised Output (Ready)</span>
+          <span style="font-size: 0.80rem; color: var(--accent-emerald); font-family: var(--font-mono);" id="proc-snr-badge">+21.3 dB SNR Imp.</span>
+        </div>
+
+        <canvas id="canvas-proc-wave" class="waveform-canvas"></canvas>
+
+        <div class="deck-controls">
+          <button class="play-btn play-btn-clean" id="btn-play-proc" title="Play Denoised Audio">▶</button>
+          <div class="scrubber-container">
+            <input type="range" class="scrubber-slider" id="scrub-proc" min="0" max="100" value="0">
+            <div class="timecode">
+              <span id="time-curr-proc">0:00</span>
+              <span id="time-dur-proc">0:03</span>
+            </div>
+          </div>
+          <a href="/api/audio/processed" download="denoised_audio.wav" class="preset-btn" style="padding: 8px 12px;" title="Download Clean WAV">⬇️</a>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="workbench">🎛️ Filter Workbench</button>
+      <button class="tab-btn" data-tab="adaptive">🧠 ML Adaptive Assistant</button>
+      <button class="tab-btn" data-tab="benchmark">📊 Multi-Filter Benchmark</button>
+      <button class="tab-btn" data-tab="simulation">🧪 Noise Simulation Lab</button>
+      <button class="tab-btn" data-tab="export">📑 Export & Reports</button>
+    </div>
+
+    <!-- TAB 1: FILTER WORKBENCH -->
+    <div class="panel-content active" id="tab-workbench">
+      <div class="workbench-grid">
+
+        <!-- Controls Card -->
+        <div class="card">
+          <div class="card-title">🎛️ Digital Filter Parameters</div>
+
+          <div class="control-group">
+            <label class="control-label">Filter Topology</label>
+            <select class="studio-select" id="sel-filter-type">
+              <option value="fir">1. Linear-Phase FIR Filter (Window Method)</option>
+              <option value="iir">2. IIR Butterworth Filter (Second-Order Sections SOS)</option>
+              <option value="notch" selected>3. Harmonic IIR Notch Filter (Hum Eliminator)</option>
+              <option value="spectral_gating">4. STFT Spectral Gating (Over-subtraction)</option>
+              <option value="wiener">5. Audio Wiener Filter (Ephraim-Malah DD)</option>
+            </select>
+          </div>
+
+          <!-- Dynamic parameter panels -->
+          <div id="panel-params-fir" style="display: none;">
+            <div class="control-group">
+              <div class="control-label">Filter Mode</div>
+              <select class="studio-select" id="fir-btype">
+                <option value="lowpass">Low-Pass Filter</option>
+                <option value="highpass">High-Pass Filter</option>
+                <option value="bandpass">Band-Pass Filter</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Cutoff Frequency</span>
+                <span class="control-value" id="val-fir-cut">3400 Hz</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-fir-cut" min="100" max="7500" value="3400" step="50">
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Filter Taps (Order + 1)</span>
+                <span class="control-value" id="val-fir-taps">101</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-fir-taps" min="21" max="251" value="101" step="2">
+            </div>
+          </div>
+
+          <div id="panel-params-iir" style="display: none;">
+            <div class="control-group">
+              <div class="control-label">Butterworth Mode</div>
+              <select class="studio-select" id="iir-btype">
+                <option value="highpass" selected>High-Pass (Rumble Killer)</option>
+                <option value="lowpass">Low-Pass</option>
+                <option value="bandpass">Band-Pass</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Cutoff Frequency</span>
+                <span class="control-value" id="val-iir-cut">150 Hz</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-iir-cut" min="50" max="4000" value="150" step="10">
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Filter Order (N)</span>
+                <span class="control-value" id="val-iir-order">4</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-iir-order" min="1" max="8" value="4" step="1">
+            </div>
+          </div>
+
+          <div id="panel-params-notch">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Mains Hum Fundamental</span>
+                <span class="control-value" id="val-notch-f0">50 Hz</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-notch-f0" min="40" max="120" value="50" step="1">
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Quality Factor (Q = f0 / &Delta;f)</span>
+                <span class="control-value" id="val-notch-q">35</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-notch-q" min="10" max="60" value="35" step="5">
+            </div>
+            <div class="control-group">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="chk-notch-harmonics" checked>
+                <span>Harmonic Multiples (100, 150, 200 Hz)</span>
+              </label>
+            </div>
+          </div>
+
+          <div id="panel-params-sg" style="display: none;">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Gain Floor</span>
+                <span class="control-value" id="val-sg-floor">-18 dB</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-sg-floor" min="-35" max="-6" value="-18" step="1">
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Over-Subtraction Multiplier (&alpha;)</span>
+                <span class="control-value" id="val-sg-over">1.5x</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-sg-over" min="1.0" max="2.5" value="1.5" step="0.1">
+            </div>
+          </div>
+
+          <div id="panel-params-wiener" style="display: none;">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Decision-Directed Smoothing (&alpha;)</span>
+                <span class="control-value" id="val-w-alpha">0.95</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-w-alpha" min="0.80" max="0.99" value="0.95" step="0.01">
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Noise Overestimation (&beta;)</span>
+                <span class="control-value" id="val-w-beta">1.25</span>
+              </div>
+              <input type="range" class="studio-slider" id="slider-w-beta" min="1.0" max="2.0" value="1.25" step="0.05">
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-execute-filter">
+            <span>🚀 Apply Digital Filter</span>
+          </button>
+        </div>
+
+        <!-- Frequency Response & Metrics Card -->
+        <div class="card">
+          <div class="card-title">📈 Frequency Response & Output Metrics</div>
+          <canvas id="canvas-freqz" class="freqz-canvas"></canvas>
+
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-box-title">SNR Improvement</span>
+              <span class="metric-box-val positive" id="metric-snr-imp">+21.3 dB</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-box-title">Output SNR</span>
+              <span class="metric-box-val" id="metric-snr-out">26.3 dB</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-box-title">RMSE Distortion</span>
+              <span class="metric-box-val" id="metric-rmse">0.0062</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-box-title">Execution Time</span>
+              <span class="metric-box-val" id="metric-latency">23.1 ms</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: ML ADAPTIVE ASSISTANT -->
+    <div class="panel-content" id="tab-adaptive">
+      <div class="workbench-grid">
+
+        <!-- AI Diagnosis Card -->
+        <div class="ml-diagnosis-box">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="badge" style="background: rgba(99, 102, 241, 0.25); color: #c7d2fe; border-color: rgba(99, 102, 241, 0.4);">
+              🧠 Random Forest Noise Diagnosis
+            </span>
+            <span class="badge" id="ml-confidence-badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);">
+              76.2% Confidence
+            </span>
+          </div>
+
+          <div class="ml-class-title" id="ml-predicted-label">Electrical Hum (50/60 Hz)</div>
+          <p style="font-size: 0.90rem; color: var(--text-muted); line-height: 1.5;" id="ml-rationale">
+            Strong narrowband energy concentration detected around 50 Hz powerline fundamental. 
+            Selected Harmonic IIR Notch filter with Q=35 to eliminate hum with zero loss to speech formants.
+          </p>
+
+          <div style="margin-top: 20px;">
+            <button class="btn-primary btn-emerald" id="btn-run-adaptive-full">
+              <span>⚡ Diagnose Interference & Auto-Clean</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Probability Distribution Card -->
+        <div class="card">
+          <div class="card-title">📊 Noise Classification Probabilities</div>
+
+          <div id="prob-container">
+            <!-- Dynamically populated probability bars -->
+            <div class="prob-row">
+              <div class="prob-meta">
+                <span>Electrical Hum (50/60 Hz)</span>
+                <strong id="prob-val-hum">76.2%</strong>
+              </div>
+              <div class="prob-track">
+                <div class="prob-bar winner" id="bar-hum" style="width: 76.2%;"></div>
+              </div>
+            </div>
+
+            <div class="prob-row">
+              <div class="prob-meta">
+                <span>Low-Frequency Rumble (&lt;130 Hz)</span>
+                <strong id="prob-val-rumble">8.4%</strong>
+              </div>
+              <div class="prob-track">
+                <div class="prob-bar" id="bar-rumble" style="width: 8.4%;"></div>
+              </div>
+            </div>
+
+            <div class="prob-row">
+              <div class="prob-meta">
+                <span>High-Frequency Hiss (&gt;3.6 kHz)</span>
+                <strong id="prob-val-hiss">6.1%</strong>
+              </div>
+              <div class="prob-track">
+                <div class="prob-bar" id="bar-hiss" style="width: 6.1%;"></div>
+              </div>
+            </div>
+
+            <div class="prob-row">
+              <div class="prob-meta">
+                <span>Broadband White/Pink Noise</span>
+                <strong id="prob-val-broadband">5.3%</strong>
+              </div>
+              <div class="prob-track">
+                <div class="prob-bar" id="bar-broadband" style="width: 5.3%;"></div>
+              </div>
+            </div>
+
+            <div class="prob-row">
+              <div class="prob-meta">
+                <span>Clean Speech Baseline</span>
+                <strong id="prob-val-clean">4.0%</strong>
+              </div>
+              <div class="prob-track">
+                <div class="prob-bar" id="bar-clean" style="width: 4.0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 3: MULTI-FILTER BENCHMARK -->
+    <div class="panel-content" id="tab-benchmark">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <div class="card-title" style="margin-bottom: 2px;">📊 Multi-Filter Comparative Benchmark Matrix</div>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">
+              Process the identical input recording through all 6 filtering strategies side-by-side to compare SNR improvements and execution latencies.
+            </p>
+          </div>
+          <button class="btn-primary" id="btn-run-benchmark-full" style="width: auto; padding: 10px 22px;">
+            <span>🚀 Run All 6 Methods</span>
+          </button>
+        </div>
+
+        <div class="benchmark-table-container">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Play</th>
+                <th>Strategy Name</th>
+                <th>&Delta;SNR Improvement</th>
+                <th>Output SNR</th>
+                <th>RMSE Distortion</th>
+                <th>Execution Time</th>
+                <th>Real-Time Factor</th>
+              </tr>
+            </thead>
+            <tbody id="benchmark-tbody">
+              <!-- Dynamically populated benchmark rows -->
+              <tr>
+                <td><button class="table-audio-btn" data-audio-id="baseline">▶</button></td>
+                <td>1. Baseline (Noisy Input)</td>
+                <td>+0.00 dB</td>
+                <td>5.00 dB</td>
+                <td>0.0721</td>
+                <td>0.1 ms</td>
+                <td>0.000x</td>
+              </tr>
+              <tr>
+                <td><button class="table-audio-btn" data-audio-id="fir">▶</button></td>
+                <td>2. FIR Bandpass (300-3400 Hz)</td>
+                <td style="color: var(--accent-rose);">-2.32 dB</td>
+                <td>2.68 dB</td>
+                <td>0.0941</td>
+                <td>81.2 ms</td>
+                <td>0.023x</td>
+              </tr>
+              <tr>
+                <td><button class="table-audio-btn" data-audio-id="butterworth">▶</button></td>
+                <td>3. Butterworth Highpass (150 Hz)</td>
+                <td>+0.59 dB</td>
+                <td>5.59 dB</td>
+                <td>0.0673</td>
+                <td>40.7 ms</td>
+                <td>0.012x</td>
+              </tr>
+              <tr class="winner-row">
+                <td><button class="table-audio-btn" data-audio-id="notch">▶</button></td>
+                <td>4. Harmonic Notch (50 Hz) 🏆</td>
+                <td style="color: var(--accent-emerald);">+21.29 dB</td>
+                <td>26.29 dB</td>
+                <td>0.0062</td>
+                <td>23.1 ms</td>
+                <td>0.007x</td>
+              </tr>
+              <tr>
+                <td><button class="table-audio-btn" data-audio-id="spec_gate">▶</button></td>
+                <td>5. STFT Spectral Gating</td>
+                <td>+3.79 dB</td>
+                <td>8.79 dB</td>
+                <td>0.0466</td>
+                <td>179.5 ms</td>
+                <td>0.051x</td>
+              </tr>
+              <tr>
+                <td><button class="table-audio-btn" data-audio-id="wiener">▶</button></td>
+                <td>6. Audio Wiener Filter (DD)</td>
+                <td>+7.30 dB</td>
+                <td>12.30 dB</td>
+                <td>0.0311</td>
+                <td>83.4 ms</td>
+                <td>0.024x</td>
+              </tr>
+              <tr class="winner-row">
+                <td><button class="table-audio-btn" data-audio-id="adaptive">▶</button></td>
+                <td>7. ML-Assisted Adaptive Filtering 🏆</td>
+                <td style="color: var(--accent-emerald);">+21.29 dB</td>
+                <td>26.29 dB</td>
+                <td>0.0062</td>
+                <td>77.6 ms</td>
+                <td>0.022x</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Unnoised Audio Showcase Gallery -->
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="font-size: 0.98rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                <span>🎧 Unnoised Audio Listening Rack (All Filter Topologies)</span>
+              </div>
+              <p style="font-size: 0.80rem; color: var(--text-muted); margin-top: 2px;">
+                Listen to each filtered audio stream side-by-side or download uncompressed 16-bit WAVs to evaluate noise rejection and speech clarity.
+              </p>
+            </div>
+            <button class="preset-btn" id="btn-export-all-wavs" style="background: rgba(16, 185, 129, 0.15); border-color: var(--accent-emerald); color: var(--accent-emerald); font-weight: 700; padding: 8px 18px;">
+              💾 Export All 6 Unnoised WAVs to outputs/
+            </button>
+          </div>
+
+          <div id="unnoised-rack-grid" class="unnoised-rack-grid">
+            <!-- 1. FIR -->
+            <div class="unnoised-card" id="card-track-fir">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">1. FIR Bandpass</span>
+                <span class="unnoised-badge badge-fir">Linear-Phase</span>
+              </div>
+              <p class="unnoised-desc">Causal windowed sinc (300–3400 Hz). Zero phase distortion, constant group delay.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="fir">▶ Listen Denoised</button>
+                <a href="/api/audio/fir" download="02_unnoised_fir_bandpass.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+
+            <!-- 2. Butterworth -->
+            <div class="unnoised-card" id="card-track-butterworth">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">2. Butterworth Highpass</span>
+                <span class="unnoised-badge badge-iir">IIR SOS</span>
+              </div>
+              <p class="unnoised-desc">4th-order biquad cascade (>150 Hz). Maximally flat passband, suppresses low rumble.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="butterworth">▶ Listen Denoised</button>
+                <a href="/api/audio/butterworth" download="03_unnoised_butterworth_highpass.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+
+            <!-- 3. Harmonic Notch -->
+            <div class="unnoised-card" id="card-track-notch">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">3. Harmonic Notch</span>
+                <span class="unnoised-badge badge-notch">Surgical Biquad</span>
+              </div>
+              <p class="unnoised-desc">Cascaded 50 Hz, 100 Hz, 150 Hz, 200 Hz notches with Q=35. Eradicates powerline hum.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="notch">▶ Listen Denoised</button>
+                <a href="/api/audio/notch" download="04_unnoised_harmonic_notch.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+
+            <!-- 4. Spectral Gating -->
+            <div class="unnoised-card" id="card-track-spec_gate">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">4. STFT Spectral Gating</span>
+                <span class="unnoised-badge badge-spectral">Time-Frequency</span>
+              </div>
+              <p class="unnoised-desc">Dynamic STFT quantile noise tracking with 2D Gaussian kernel spectrogram smoothing.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="spec_gate">▶ Listen Denoised</button>
+                <a href="/api/audio/spec_gate" download="05_unnoised_spectral_gating.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+
+            <!-- 5. Wiener Filter -->
+            <div class="unnoised-card" id="card-track-wiener">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">5. Audio Wiener Filter</span>
+                <span class="unnoised-badge badge-wiener">Decision-Directed</span>
+              </div>
+              <p class="unnoised-desc">Ephraim-Malah recursion (alpha=0.95, gain floor=-18 dB). Smooth statistical restoration.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="wiener">▶ Listen Denoised</button>
+                <a href="/api/audio/wiener" download="06_unnoised_wiener_filter.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+
+            <!-- 6. ML Adaptive -->
+            <div class="unnoised-card" id="card-track-adaptive">
+              <div class="unnoised-card-top">
+                <span class="unnoised-title">6. ML-Adaptive Filter</span>
+                <span class="unnoised-badge badge-ml">Intelligent AI</span>
+              </div>
+              <p class="unnoised-desc">Auto-diagnosed via 20 acoustic features & dispatched with optimal hyperparameters.</p>
+              <div class="unnoised-actions">
+                <button class="preset-btn play-unnoised-btn" data-audio-id="adaptive">▶ Listen Denoised</button>
+                <a href="/api/audio/adaptive" download="07_unnoised_ml_adaptive.wav" class="preset-btn" title="Download WAV">⬇️ WAV</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: NOISE SIMULATION LAB -->
+    <div class="panel-content" id="tab-simulation">
+      <div class="workbench-grid">
+        <div class="card">
+          <div class="card-title">🧪 Calibrated SNR Noise Synthesizer</div>
+          <div class="control-group">
+            <label class="control-label">Interference Category</label>
+            <select class="studio-select" id="sel-noise-type">
+              <option value="50hz_hum" selected>50 Hz Electrical Mains Hum</option>
+              <option value="60hz_hum">60 Hz Electrical Mains Hum</option>
+              <option value="rumble">Low-Frequency HVAC Rumble (&lt;130 Hz)</option>
+              <option value="hiss">High-Frequency Tape Hiss (&gt;3.6 kHz)</option>
+              <option value="pink">Broadband 1/f Pink Noise</option>
+              <option value="white">Broadband White Noise</option>
+              <option value="mixed">Composite Mixed Real-World Noise</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Target SNR (dB) [Lower = Noisier]</span>
+              <span class="control-value" id="val-target-snr">5.0 dB</span>
+            </div>
+            <input type="range" class="studio-slider" id="slider-target-snr" min="-10" max="20" value="5" step="1">
+          </div>
+
+          <button class="btn-primary" id="btn-mix-custom">
+            <span>🧪 Mix Noise at Target SNR</span>
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📁 Upload Custom Audio Recording</div>
+          <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px;">
+            Upload any WAV recording containing voice and interference. You can optionally upload a paired clean reference speech file to calculate ground-truth SNR.
+          </p>
+
+          <div class="control-group">
+            <label class="control-label">Noisy Audio WAV</label>
+            <input type="file" id="input-file-noisy" accept=".wav,.wave" class="studio-select">
+          </div>
+
+          <div class="control-group">
+            <label class="control-label">Optional Clean Reference WAV</label>
+            <input type="file" id="input-file-ref" accept=".wav,.wave" class="studio-select">
+          </div>
+
+          <button class="btn-primary" id="btn-upload-files">
+            <span>📥 Load Uploaded Files</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: EXPORT & REPORTS -->
+    <div class="panel-content" id="tab-export">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+        <div class="card">
+          <div class="card-title">🎵 Processed Audio WAV</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            16-bit uncompressed PCM WAV format at 16 kHz sample rate.
+          </p>
+          <a href="/api/audio/processed" download="sonicpure_denoised.wav" class="btn-primary" style="text-decoration: none;">
+            <span>⬇️ Download WAV</span>
+          </a>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📊 Tabular Benchmark CSV</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            Structured CSV spreadsheet of SNR, RMSE, RTF, and execution times.
+          </p>
+          <a href="/api/export/csv" download="benchmark_results.csv" class="btn-primary" style="text-decoration: none;">
+            <span>⬇️ Download CSV</span>
+          </a>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📦 JSON Experiment Report</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+            Complete metadata payload with 20 acoustic features and DSP settings.
+          </p>
+          <a href="/api/export/json" download="experiment_summary.json" class="btn-primary" style="text-decoration: none;">
+            <span>⬇️ Download JSON</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

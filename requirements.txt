@@ -1,0 +1,15 @@
+# Adaptive ML-Assisted Audio Noise Reduction Using FIR/IIR Filters
+# Core dependencies pinned for compatibility with Python 3.11/3.12
+
+numpy>=1.26.0,<3.0.0
+scipy>=1.13.0,<2.0.0
+soundfile>=0.12.1
+librosa>=0.10.2
+scikit-learn>=1.4.0
+matplotlib>=3.8.0
+plotly>=5.20.0
+pandas>=2.2.0
+joblib>=1.3.0
+pytest>=8.0.0
+fastapi>=0.110.0
+uvicorn>=0.30.0

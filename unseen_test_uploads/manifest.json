@@ -1,0 +1,135 @@
+[
+  {
+    "filename": "01_VoiceBank_DEMAND_noisy_male_1.wav",
+    "source": "VoiceBank+DEMAND Official Benchmark (Male Speaker)",
+    "url": "https://huggingface.co/spaces/DurreSudoku/Speech_Enhancement_Demo/resolve/main/examples/VoiceBank+DEMAND_test_sample_male_1.wav",
+    "duration_sec": 1.74,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "02_VoiceBank_DEMAND_noisy_sample_1.wav",
+    "source": "Speech Enhancement Benchmark Sample 1 (DurreSudoku)",
+    "url": "https://huggingface.co/spaces/DurreSudoku/Speech_Enhancement_Demo/resolve/main/examples/durim_test_sample_1.wav",
+    "duration_sec": 4.69,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "03_VoiceBank_DEMAND_noisy_sample_2.wav",
+    "source": "Speech Enhancement Benchmark Sample 2 (DurreSudoku)",
+    "url": "https://huggingface.co/spaces/DurreSudoku/Speech_Enhancement_Demo/resolve/main/examples/durim_test_sample_2.wav",
+    "duration_sec": 5.42,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "04_FSoft_Benchmark_English_Noisy_minus6dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (English -6 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/EN_-6db.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "05_FSoft_Benchmark_English_Noisy_minus3dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (English -3 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/EN_-3dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "06_FSoft_Benchmark_English_Noisy_0dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (English 0 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/EN_+0dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "07_FSoft_Benchmark_English_Noisy_plus3dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (English +3 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/EN_+3dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "08_FSoft_Benchmark_English_Noisy_plus6dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (English +6 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/EN_+6dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "09_FSoft_Benchmark_Japanese_Noisy_0dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (Japanese 0 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/JA_+0dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "10_FSoft_Benchmark_Japanese_Noisy_plus3dB.wav",
+    "source": "FSoft AI Center Noisy Speech Benchmark (Japanese +3 dB)",
+    "url": "https://huggingface.co/spaces/fsoft-ai-center/Speech-Enhancement/resolve/main/noisy_speech/JA_+3dB.wav",
+    "duration_sec": 5.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "11_DNS_Challenge_UniPASE_fileid_295.wav",
+    "source": "Microsoft DNS-Challenge / UniPASE Benchmark (fileid_295.wav)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unipase-speech-enhancement/resolve/main/examples/fileid_295.wav",
+    "duration_sec": 4.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "12_DNS_Challenge_UniPASE_fileid_210.wav",
+    "source": "Microsoft DNS-Challenge / UniPASE Benchmark (fileid_210.flac)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unipase-speech-enhancement/resolve/main/examples/fileid_210.flac",
+    "duration_sec": 14.61,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "13_DNS_Challenge_UniPASE_fileid_49.wav",
+    "source": "Microsoft DNS-Challenge / UniPASE Benchmark (fileid_49.flac)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unipase-speech-enhancement/resolve/main/examples/fileid_49.flac",
+    "duration_sec": 12.36,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "14_UniSE_Benchmark_sr_noisy_1.wav",
+    "source": "UniSE Speech Enhancement Benchmark (sr_noisy_1.wav)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unise-speech-enhancement/resolve/main/examples/sr_noisy_1.wav",
+    "duration_sec": 10.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "15_UniSE_Benchmark_sr_noisy_2.wav",
+    "source": "UniSE Speech Enhancement Benchmark (sr_noisy_2.wav)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unise-speech-enhancement/resolve/main/examples/sr_noisy_2.wav",
+    "duration_sec": 10.0,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "16_UniSE_Benchmark_tse_noisy_1.wav",
+    "source": "UniSE Speech Enhancement Benchmark (tse_noisy_1.wav)",
+    "url": "https://huggingface.co/spaces/hugging-apps/unise-speech-enhancement/resolve/main/examples/tse_noisy_1.wav",
+    "duration_sec": 4.91,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "17_SpeechBrain_Official_Noisy_French.wav",
+    "source": "SpeechBrain Official Speech Enhancement Demo (example_fr.wav)",
+    "url": "https://huggingface.co/spaces/akhaliq/Speechbrain-Speech-enhancement/resolve/main/samples_audio_samples_example_fr.wav",
+    "duration_sec": 2.58,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "18_SpeechBrain_Official_Test_Mixture.wav",
+    "source": "SpeechBrain Official Speech Enhancement Demo (test_mixture.wav)",
+    "url": "https://huggingface.co/spaces/marquesafonso/speech-enhancement/resolve/main/samples_audio_samples_test_mixture.wav",
+    "duration_sec": 2.07,
+    "locally_generated_or_mixed": false
+  },
+  {
+    "filename": "19_Picovoice_Koala_Official_Noisy_Speech.wav",
+    "source": "Picovoice Koala Official Noisy Speech Benchmark (test.wav)",
+    "url": "https://raw.githubusercontent.com/Picovoice/koala/master/resources/audio_samples/test.wav",
+    "duration_sec": 5.86,
+    "locally_generated_or_mixed": false
+  }
+]

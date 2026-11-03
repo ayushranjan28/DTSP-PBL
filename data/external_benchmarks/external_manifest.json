@@ -1,0 +1,226 @@
+[
+  {
+    "filename": "ms_clean_clnsp1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp1.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_clean_clnsp2.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp2.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_clean_clnsp3.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp3.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_clean_clnsp4.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp4.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_clean_clnsp5.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp5.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_clean_clnsp6.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/clean_test/clnsp6.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "dfn_clean_freesound_33711.wav",
+    "source": "DeepFilterNet / Freesound",
+    "url": "https://raw.githubusercontent.com/Rikorose/DeepFilterNet/main/assets/clean_freesound_33711.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "sb_clean_spk1_snt1.wav",
+    "source": "SpeechBrain / LibriSpeech",
+    "url": "https://raw.githubusercontent.com/speechbrain/speechbrain/develop/tests/samples/ASR/spk1_snt1.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 2.87
+  },
+  {
+    "filename": "sb_clean_spk1_snt2.wav",
+    "source": "SpeechBrain / LibriSpeech",
+    "url": "https://raw.githubusercontent.com/speechbrain/speechbrain/develop/tests/samples/ASR/spk1_snt2.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 3.15
+  },
+  {
+    "filename": "sb_clean_spk2_snt1.wav",
+    "source": "SpeechBrain / LibriSpeech",
+    "url": "https://raw.githubusercontent.com/speechbrain/speechbrain/develop/tests/samples/ASR/spk2_snt1.wav",
+    "expected_category": "clean_speech",
+    "duration_sec": 2.01
+  },
+  {
+    "filename": "ms_noise_AirConditioner_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/AirConditioner_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_AirConditioner_2.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/AirConditioner_2.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_AirConditioner_3.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/AirConditioner_3.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_AirConditioner_4.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/AirConditioner_4.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Car_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Car_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Bus_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Bus_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Metro_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Metro_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Traffic_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Traffic_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_VacuumCleaner_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/VacuumCleaner_1.wav",
+    "expected_category": "high_frequency_hiss",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_VacuumCleaner_2.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/VacuumCleaner_2.wav",
+    "expected_category": "high_frequency_hiss",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_VacuumCleaner_3.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/VacuumCleaner_3.wav",
+    "expected_category": "high_frequency_hiss",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Washing_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Washing_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "dfn_noisy_snr0.wav",
+    "source": "DeepFilterNet Benchmark",
+    "url": "https://raw.githubusercontent.com/Rikorose/DeepFilterNet/main/assets/noisy_snr0.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "dfn_noise_freesound_2530.wav",
+    "source": "DeepFilterNet / Freesound",
+    "url": "https://raw.githubusercontent.com/Rikorose/DeepFilterNet/main/assets/noise_freesound_2530.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "dfn_noise_freesound_573577.wav",
+    "source": "DeepFilterNet / Freesound",
+    "url": "https://raw.githubusercontent.com/Rikorose/DeepFilterNet/main/assets/noise_freesound_573577.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 4.94
+  },
+  {
+    "filename": "ms_noise_Babble_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/Babble_1.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Babble_2.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_test/Babble_2.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Cafe_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Cafe_1.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Restaurant_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Restaurant_1.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "ms_noise_Station_1.wav",
+    "source": "Microsoft MS-SNSD",
+    "url": "https://raw.githubusercontent.com/microsoft/MS-SNSD/master/noise_train/Station_1.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "sb_noise1.wav",
+    "source": "SpeechBrain Test Suite",
+    "url": "https://raw.githubusercontent.com/speechbrain/speechbrain/develop/tests/samples/noise/noise1.wav",
+    "expected_category": "broadband_noise",
+    "duration_sec": 6.0
+  },
+  {
+    "filename": "sb_noise2.wav",
+    "source": "SpeechBrain Test Suite",
+    "url": "https://raw.githubusercontent.com/speechbrain/speechbrain/develop/tests/samples/noise/noise2.wav",
+    "expected_category": "low_frequency_rumble",
+    "duration_sec": 5.0
+  }
+]

@@ -1,0 +1,222 @@
+[
+  {
+    "filename": "female01_50hz_mains_hum_5db.wav",
+    "clean_reference": "clean_female_sentence_01.wav",
+    "speaker": "Female (slt)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "50 Hz Power-line Hum",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Harmonic Notch Filter (50 Hz + Harmonics)",
+    "description": "Ground-loop electrical hum with 50 Hz fundamental and odd harmonics (150, 250, 350 Hz)."
+  },
+  {
+    "filename": "female01_hvac_rumble_3db.wav",
+    "clean_reference": "clean_female_sentence_01.wav",
+    "speaker": "Female (slt)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "HVAC Low-Frequency Rumble",
+    "target_snr_db": 3.0,
+    "measured_snr_db": 3.0,
+    "recommended_filter": "Butterworth Highpass (130-150 Hz SOS)",
+    "description": "Acoustic rumble from air conditioning, wind buffeting, and heavy traffic vibrations."
+  },
+  {
+    "filename": "female01_tape_hiss_6db.wav",
+    "clean_reference": "clean_female_sentence_01.wav",
+    "speaker": "Female (slt)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Pre-amp & Tape Hiss",
+    "target_snr_db": 6.0,
+    "measured_snr_db": 6.0,
+    "recommended_filter": "FIR Lowpass (3800 Hz) or STFT Spectral Gating",
+    "description": "High-frequency thermal noise and analogue tape flutter concentrated above 3.5 kHz."
+  },
+  {
+    "filename": "female01_ambient_pink_5db.wav",
+    "clean_reference": "clean_female_sentence_01.wav",
+    "speaker": "Female (slt)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Ambient Pink Noise",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Audio Wiener Filter (Ephraim-Malah DD)",
+    "description": "1/f spectral noise modeling crowd chatter, rainfall, and room reverberation floor."
+  },
+  {
+    "filename": "female01_harsh_mixed_0db.wav",
+    "clean_reference": "clean_female_sentence_01.wav",
+    "speaker": "Female (slt)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Severe Mixed Noise (Challenging)",
+    "target_snr_db": 0.0,
+    "measured_snr_db": -0.0,
+    "recommended_filter": "ML-Assisted Multi-stage Pipeline (Notch + Wiener)",
+    "description": "Harsh 0 dB SNR corruption combining simultaneous 50 Hz hum, low rumble, and broadband hiss."
+  },
+  {
+    "filename": "female02_50hz_mains_hum_5db.wav",
+    "clean_reference": "clean_female_sentence_02.wav",
+    "speaker": "Female (slt)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "50 Hz Power-line Hum",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Harmonic Notch Filter (50 Hz + Harmonics)",
+    "description": "Ground-loop electrical hum with 50 Hz fundamental and odd harmonics (150, 250, 350 Hz)."
+  },
+  {
+    "filename": "female02_hvac_rumble_3db.wav",
+    "clean_reference": "clean_female_sentence_02.wav",
+    "speaker": "Female (slt)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "HVAC Low-Frequency Rumble",
+    "target_snr_db": 3.0,
+    "measured_snr_db": 3.0,
+    "recommended_filter": "Butterworth Highpass (130-150 Hz SOS)",
+    "description": "Acoustic rumble from air conditioning, wind buffeting, and heavy traffic vibrations."
+  },
+  {
+    "filename": "female02_tape_hiss_6db.wav",
+    "clean_reference": "clean_female_sentence_02.wav",
+    "speaker": "Female (slt)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Pre-amp & Tape Hiss",
+    "target_snr_db": 6.0,
+    "measured_snr_db": 6.0,
+    "recommended_filter": "FIR Lowpass (3800 Hz) or STFT Spectral Gating",
+    "description": "High-frequency thermal noise and analogue tape flutter concentrated above 3.5 kHz."
+  },
+  {
+    "filename": "female02_ambient_pink_5db.wav",
+    "clean_reference": "clean_female_sentence_02.wav",
+    "speaker": "Female (slt)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Ambient Pink Noise",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Audio Wiener Filter (Ephraim-Malah DD)",
+    "description": "1/f spectral noise modeling crowd chatter, rainfall, and room reverberation floor."
+  },
+  {
+    "filename": "female02_harsh_mixed_0db.wav",
+    "clean_reference": "clean_female_sentence_02.wav",
+    "speaker": "Female (slt)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Severe Mixed Noise (Challenging)",
+    "target_snr_db": 0.0,
+    "measured_snr_db": 0.0,
+    "recommended_filter": "ML-Assisted Multi-stage Pipeline (Notch + Wiener)",
+    "description": "Harsh 0 dB SNR corruption combining simultaneous 50 Hz hum, low rumble, and broadband hiss."
+  },
+  {
+    "filename": "male01_50hz_mains_hum_5db.wav",
+    "clean_reference": "clean_male_sentence_01.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "50 Hz Power-line Hum",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Harmonic Notch Filter (50 Hz + Harmonics)",
+    "description": "Ground-loop electrical hum with 50 Hz fundamental and odd harmonics (150, 250, 350 Hz)."
+  },
+  {
+    "filename": "male01_hvac_rumble_3db.wav",
+    "clean_reference": "clean_male_sentence_01.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "HVAC Low-Frequency Rumble",
+    "target_snr_db": 3.0,
+    "measured_snr_db": 3.0,
+    "recommended_filter": "Butterworth Highpass (130-150 Hz SOS)",
+    "description": "Acoustic rumble from air conditioning, wind buffeting, and heavy traffic vibrations."
+  },
+  {
+    "filename": "male01_tape_hiss_6db.wav",
+    "clean_reference": "clean_male_sentence_01.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Pre-amp & Tape Hiss",
+    "target_snr_db": 6.0,
+    "measured_snr_db": 6.0,
+    "recommended_filter": "FIR Lowpass (3800 Hz) or STFT Spectral Gating",
+    "description": "High-frequency thermal noise and analogue tape flutter concentrated above 3.5 kHz."
+  },
+  {
+    "filename": "male01_ambient_pink_5db.wav",
+    "clean_reference": "clean_male_sentence_01.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Ambient Pink Noise",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Audio Wiener Filter (Ephraim-Malah DD)",
+    "description": "1/f spectral noise modeling crowd chatter, rainfall, and room reverberation floor."
+  },
+  {
+    "filename": "male01_harsh_mixed_0db.wav",
+    "clean_reference": "clean_male_sentence_01.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "For the twentieth time that evening the two men shook hands.",
+    "noise_type": "Severe Mixed Noise (Challenging)",
+    "target_snr_db": 0.0,
+    "measured_snr_db": 0.0,
+    "recommended_filter": "ML-Assisted Multi-stage Pipeline (Notch + Wiener)",
+    "description": "Harsh 0 dB SNR corruption combining simultaneous 50 Hz hum, low rumble, and broadband hiss."
+  },
+  {
+    "filename": "male02_50hz_mains_hum_5db.wav",
+    "clean_reference": "clean_male_sentence_02.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "50 Hz Power-line Hum",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Harmonic Notch Filter (50 Hz + Harmonics)",
+    "description": "Ground-loop electrical hum with 50 Hz fundamental and odd harmonics (150, 250, 350 Hz)."
+  },
+  {
+    "filename": "male02_hvac_rumble_3db.wav",
+    "clean_reference": "clean_male_sentence_02.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "HVAC Low-Frequency Rumble",
+    "target_snr_db": 3.0,
+    "measured_snr_db": 3.0,
+    "recommended_filter": "Butterworth Highpass (130-150 Hz SOS)",
+    "description": "Acoustic rumble from air conditioning, wind buffeting, and heavy traffic vibrations."
+  },
+  {
+    "filename": "male02_tape_hiss_6db.wav",
+    "clean_reference": "clean_male_sentence_02.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Pre-amp & Tape Hiss",
+    "target_snr_db": 6.0,
+    "measured_snr_db": 6.0,
+    "recommended_filter": "FIR Lowpass (3800 Hz) or STFT Spectral Gating",
+    "description": "High-frequency thermal noise and analogue tape flutter concentrated above 3.5 kHz."
+  },
+  {
+    "filename": "male02_ambient_pink_5db.wav",
+    "clean_reference": "clean_male_sentence_02.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Ambient Pink Noise",
+    "target_snr_db": 5.0,
+    "measured_snr_db": 5.0,
+    "recommended_filter": "Audio Wiener Filter (Ephraim-Malah DD)",
+    "description": "1/f spectral noise modeling crowd chatter, rainfall, and room reverberation floor."
+  },
+  {
+    "filename": "male02_harsh_mixed_0db.wav",
+    "clean_reference": "clean_male_sentence_02.wav",
+    "speaker": "Male (bdl)",
+    "transcript": "He turned sharply, and faced Gregson across the table.",
+    "noise_type": "Severe Mixed Noise (Challenging)",
+    "target_snr_db": 0.0,
+    "measured_snr_db": -0.0,
+    "recommended_filter": "ML-Assisted Multi-stage Pipeline (Notch + Wiener)",
+    "description": "Harsh 0 dB SNR corruption combining simultaneous 50 Hz hum, low rumble, and broadband hiss."
+  }
+]
