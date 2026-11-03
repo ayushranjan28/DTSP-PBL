@@ -409,6 +409,51 @@ def list_samples():
     }
 
 
+@app.post("/api/load-forensic-sample")
+def load_forensic_sample(sample_id: str = Form(...)):
+    """Load an un-denoised, raw historical or forensic recording directly into the noisy input deck."""
+    state.sync_from_disk_if_needed()
+    sample_path = os.path.join(os.path.dirname(__file__), "data", "samples", sample_id)
+    if not os.path.exists(sample_path):
+        sample_path = os.path.join(os.path.dirname(__file__), "data", "forensic_cases", sample_id)
+    if not os.path.exists(sample_path):
+        raise HTTPException(status_code=404, detail=f"Forensic sample not found: {sample_id}")
+
+    aud, sr = load_audio(sample_path, target_sr=16000)
+    state.current_audio = aud
+    state.sr = sr
+    state.clean_reference = None
+    state.has_clean_ref = False
+    state.is_simulated = False
+    state.audio_source_name = f"Raw Forensic: {sample_id}"
+    state.active_sample_id = sample_id
+    state.benchmark_results = []
+    state.method_audio_cache = {}
+
+    # Automatically diagnose and denoise
+    state.auto_denoise_current()
+    state.save_to_disk()
+
+    t_sec = 0.05
+    metrics = compute_unpaired_metrics(
+        noisy_input=state.current_audio,
+        processed=state.processed_audio,
+        sr=state.sr,
+        processing_time_sec=t_sec
+    )
+
+    status = get_status()
+    return {
+        **status,
+        "noisy_audio_data_uri": audio_to_base64_data_uri(state.current_audio, state.sr),
+        "processed_audio_data_uri": audio_to_base64_data_uri(state.processed_audio, state.sr),
+        "noisy_waveform": get_downsampled_waveform(state.current_audio),
+        "processed_waveform": get_downsampled_waveform(state.processed_audio),
+        "prediction": state.ml_prediction,
+        "metrics": metrics
+    }
+
+
 @app.post("/api/select-sample")
 def select_sample(sample_id: str = Form(...), preset: Optional[str] = Form(None)):
     """Switch active clean sample reference and re-mix active noise scenario."""

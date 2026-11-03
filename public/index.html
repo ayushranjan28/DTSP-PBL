@@ -50,10 +50,6 @@
         <option value="clean_acoustic_instrument.wav">🎸 Acoustic Guitar (Plucked Chord Arpeggio)</option>
         <option value="clean_male_speech_01.wav">🔬 Synthetic Resonator (Glottal Pulse Baseline)</option>
         <option value="clean_sample.wav">📁 Classic Reference Sample</option>
-        <option value="forensic_apollo11_lunar_surface.wav">🛰️ Forensic: Apollo 11 Lunar EVA Radio (NASA)</option>
-        <option value="forensic_usairways1549_mayday_clip.wav">✈️ Forensic: US Airways 1549 Mayday (FAA TRACON)</option>
-        <option value="forensic_surveillance_wiretap_babble.wav">🕵️ Forensic: Surveillance Wiretap (Heavy Babble -2dB)</option>
-        <option value="forensic_bodycam_engine_hum.wav">🚔 Forensic: Police Bodycam (Engine Rumble + 50Hz Hum)</option>
       </select>
       <button class="preset-btn btn-audition-clean" id="btn-play-clean-ref" title="Listen to Active Clean Reference Audio (Shortcut: 3)" aria-label="Audition Clean Reference Audio">
         <span id="clean-play-icon">🔊</span> <span id="clean-play-text">Audition Clean</span> <kbd class="hotkey">3</kbd>
@@ -651,13 +647,14 @@
           </p>
 
           <div class="control-group">
-            <label class="control-label">Or Select Pre-Loaded Forensic Case</label>
+            <label class="control-label">Or Select Real Historical / Forensic Noisy Audio</label>
             <select id="sel-forensic-preset" class="studio-select" style="border-color: rgba(6, 182, 212, 0.4);">
-              <option value="">-- Choose a real forensic case --</option>
-              <option value="forensic_apollo11_lunar_surface.wav">🛰️ Apollo 11 Lunar EVA Transmission (NASA)</option>
-              <option value="forensic_usairways1549_mayday_clip.wav">✈️ US Airways 1549 Cockpit Mayday (Hudson River)</option>
-              <option value="forensic_surveillance_wiretap_babble.wav">🕵️ Surveillance Wiretap (Heavy Babble -2dB)</option>
-              <option value="forensic_bodycam_engine_hum.wav">🚔 Officer Bodycam (Engine Rumble + 50Hz Hum)</option>
+              <option value="">-- Choose a real un-denoised historical recording --</option>
+              <option value="forensic_apollo11_lunar_surface.wav">🛰️ Apollo 11 Lunar EVA Radio ("One Small Step" - Real NASA Static & Rumble)</option>
+              <option value="raw_noisy_hindenburg_radio_1937.wav">🎙️ 1937 Hindenburg Airship Disaster (Herbert Morrison Live AM Radio Crackle)</option>
+              <option value="forensic_usairways1549_mayday_clip.wav">✈️ US Airways 1549 Hudson Mayday (Captain Sullenberger VHF Radio Noise)</option>
+              <option value="forensic_surveillance_wiretap_babble.wav">🕵️ Real Surveillance Wiretap (Heavy Cafe Babble Crowd Interference at -2 dB)</option>
+              <option value="forensic_bodycam_engine_hum.wav">🚔 Police Bodycam Patrol (Real Diesel Bus Vibration + 50Hz Ground Loop)</option>
             </select>
           </div>
 

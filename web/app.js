@@ -1219,8 +1219,7 @@ document.getElementById('btn-upload-files').addEventListener('click', async () =
       displayName = forensicSelect.options[forensicSelect.selectedIndex].text;
       const formData = new FormData();
       formData.append('sample_id', selectedForensic);
-      formData.append('preset', 'clean');
-      const res = await fetch('/api/select-sample', { method: 'POST', body: formData });
+      const res = await fetch('/api/load-forensic-sample', { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Failed to load forensic case (HTTP ${res.status})`);
       result = await res.json();
     } else {
